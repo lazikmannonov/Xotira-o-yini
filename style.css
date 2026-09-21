@@ -1,0 +1,100 @@
+:root {
+  --bg: #eef2ff;
+  --card: #ffffff;
+  --text: #1e1b4b;
+  --muted: #6b7280;
+  --accent: #4f46e5;
+  --back: #6366f1;
+  --found: #bbf7d0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --accent: #818cf8;
+    --back: #4f46e5;
+    --found: #166534;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.oyin { width: 100%; max-width: 420px; text-align: center; }
+h1 { margin: 0 0 4px; }
+.izoh { margin: 0 0 16px; color: var(--muted); }
+
+.statistika {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+}
+
+.taxta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.karta {
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  background: transparent;
+  perspective: 600px;
+  cursor: pointer;
+}
+
+.ichki {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.35s;
+}
+
+.karta.ochiq .ichki,
+.karta.topilgan .ichki { transform: rotateY(180deg); }
+
+.yuz {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  backface-visibility: hidden;
+  font-size: clamp(1.8rem, 9vw, 2.6rem);
+}
+
+.orqa { background: var(--back); color: #fff; }
+.old { background: var(--card); transform: rotateY(180deg); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12); }
+.karta.topilgan .old { background: var(--found); }
+
+.karta:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 12px; }
+
+.xabar { min-height: 1.6em; margin: 16px 0 8px; font-weight: 600; }
+
+#qayta {
+  padding: 10px 18px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
