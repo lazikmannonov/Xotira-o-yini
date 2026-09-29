@@ -47,10 +47,8 @@ for (let i = nusxa.length - 1; i > 0; i--) {
 const j = Math.floor(Math.random() * (i + 1));
 
 ```
-[nusxa[i], nusxa[j]] = [
-  nusxa[j],
-  nusxa[i]
-];
+[nusxa[i], nusxa[j]] = [nusxa[j], nusxa[i]];
+```
 
 }
 
@@ -67,7 +65,9 @@ const v = Number(
 localStorage.getItem(REKORD_KALIT)
 );
 
+```
 return v > 0 ? v : null;
+```
 
 } catch {
 return null;
@@ -81,7 +81,7 @@ REKORD_KALIT,
 String(v)
 );
 } catch {
-// Saqlash ishlamasa, o'yin davom etadi.
+// localStorage ishlamasa ham o'yin davom etadi
 }
 }
 
@@ -89,7 +89,7 @@ function rekordniKorsat() {
 const rekord = rekordniOqi();
 
 rekordEl.textContent = rekord
-? `${rekord}`
+? String(rekord)
 : "-";
 }
 
@@ -98,8 +98,10 @@ TIMER
 ========================= */
 
 function taymerniToxtat() {
+if (taymer) {
 clearInterval(taymer);
 taymer = null;
+}
 }
 
 function taymerniBoshla() {
@@ -108,7 +110,9 @@ if (taymer) return;
 taymer = setInterval(() => {
 sekund++;
 
-vaqtEl.textContent = sekund;
+```
+vaqtEl.textContent = String(sekund);
+```
 
 }, 1000);
 }
@@ -132,12 +136,11 @@ REJIM_KALIT,
 rejim
 );
 } catch {
-// Hech narsa qilmaymiz.
+// Saqlash ishlamasa ham davom etadi
 }
 }
 
 function rejimniOrnat(rejim) {
-
 document.documentElement.setAttribute(
 "data-theme",
 rejim
@@ -150,7 +153,6 @@ rejim === "dark"
 }
 
 function rejimniAlmashtir() {
-
 const hozirgi =
 document.documentElement.getAttribute(
 "data-theme"
@@ -166,23 +168,55 @@ rejimniYoz(yangi);
 }
 
 function boshlangichRejim() {
-
 const saqlangan = rejimniOqi();
 
-if (saqlangan === "dark" || saqlangan === "light") {
+if (
+saqlangan === "dark" ||
+saqlangan === "light"
+) {
 rejimniOrnat(saqlangan);
 return;
 }
 
-const tizimDark =
-window.matchMedia &&
-window.matchMedia(
+let tizimDark = false;
+
+if (window.matchMedia) {
+tizimDark = window.matchMedia(
 "(prefers-color-scheme: dark)"
 ).matches;
+}
 
 rejimniOrnat(
-tizimDark ? "dark" : "light"
+tizimDark
+? "dark"
+: "light"
 );
+}
+
+/* =========================
+MODAL
+========================= */
+
+function ochModal() {
+winModal.classList.add("active");
+
+winModal.setAttribute(
+"aria-hidden",
+"false"
+);
+
+document.body.style.overflow = "hidden";
+}
+
+function yopModal() {
+winModal.classList.remove("active");
+
+winModal.setAttribute(
+"aria-hidden",
+"true"
+);
+
+document.body.style.overflow = "";
 }
 
 /* =========================
@@ -190,7 +224,6 @@ BOARD
 ========================= */
 
 function yangiOyin() {
-
 taymerniToxtat();
 
 yopModal();
@@ -203,7 +236,6 @@ sekund = 0;
 
 yurishEl.textContent = "0";
 vaqtEl.textContent = "0";
-
 topilganEl.textContent = "0";
 
 xabarEl.textContent = "";
@@ -219,17 +251,14 @@ const kartalar = aralashtir([
 ]);
 
 kartalar.forEach((rasm, index) => {
+const karta = document.createElement("button");
 
-const karta =
-  document.createElement("button");
-
+```
 karta.type = "button";
-
 karta.className = "karta";
 
 karta.dataset.rasm = rasm;
-
-karta.dataset.index = index;
+karta.dataset.index = String(index);
 
 karta.setAttribute(
   "aria-label",
@@ -238,17 +267,16 @@ karta.setAttribute(
 
 karta.innerHTML = `
   <div class="ichki">
-
     <div class="yuz orqa"></div>
-
     <div class="yuz old"></div>
-
   </div>
 `;
 
-karta.querySelector(
-  ".old"
-).textContent = rasm;
+const old = karta.querySelector(".old");
+
+if (old) {
+  old.textContent = rasm;
+}
 
 karta.addEventListener(
   "click",
@@ -256,6 +284,7 @@ karta.addEventListener(
 );
 
 taxta.appendChild(karta);
+```
 
 });
 }
@@ -265,7 +294,6 @@ CARD CLICK
 ========================= */
 
 function bos(karta) {
-
 if (band) return;
 
 if (
@@ -286,16 +314,14 @@ karta.dataset.rasm
 );
 
 if (!birinchi) {
-
 birinchi = karta;
-
 return;
-
 }
 
 yurishlar++;
 
-yurishEl.textContent = yurishlar;
+yurishEl.textContent =
+String(yurishlar);
 
 const ikkinchi = karta;
 
@@ -303,28 +329,25 @@ if (
 birinchi.dataset.rasm ===
 ikkinchi.dataset.rasm
 ) {
+[birinchi, ikkinchi].forEach((k) => {
+k.classList.remove("ochiq");
 
-[birinchi, ikkinchi].forEach(
-  (k) => {
+```
+  k.classList.add("topilgan");
 
-    k.classList.remove("ochiq");
-
-    k.classList.add("topilgan");
-
-    k.setAttribute(
-      "aria-label",
-      "Topilgan karta: " +
-      k.dataset.rasm
-    );
-  }
-);
+  k.setAttribute(
+    "aria-label",
+    "Topilgan karta: " +
+    k.dataset.rasm
+  );
+});
 
 birinchi = null;
 
 topilgan++;
 
 topilganEl.textContent =
-  topilgan;
+  String(topilgan);
 
 if (
   topilgan === RASMLAR.length
@@ -333,6 +356,7 @@ if (
 }
 
 return;
+```
 
 }
 
@@ -343,20 +367,18 @@ const a = birinchi;
 birinchi = null;
 
 setTimeout(() => {
+[a, ikkinchi].forEach((k) => {
+k.classList.remove("ochiq");
 
-[a, ikkinchi].forEach(
-  (k) => {
-
-    k.classList.remove("ochiq");
-
-    k.setAttribute(
-      "aria-label",
-      "Yopiq karta"
-    );
-  }
-);
+```
+  k.setAttribute(
+    "aria-label",
+    "Yopiq karta"
+  );
+});
 
 band = false;
+```
 
 }, 800);
 }
@@ -366,52 +388,46 @@ WIN
 ========================= */
 
 function yutdi() {
-
 taymerniToxtat();
 
 const eski = rekordniOqi();
 
 const yangiRekord =
-!eski || yurishlar < eski;
+!eski ||
+yurishlar < eski;
 
 if (yangiRekord) {
 rekordniYoz(yurishlar);
 }
 
 winMoves.textContent =
-yurishlar;
+String(yurishlar);
 
 winTime.textContent =
-sekund;
+String(sekund);
 
 winText.textContent =
 `${yurishlar} yurish va ${sekund} soniyada barcha juftliklarni topdingiz.`;
 
 if (yangiRekord) {
+newRecordEl.classList.add("show");
 
-newRecordEl.classList.add(
-  "show"
-);
-
+```
 xabarEl.textContent =
   "🎉 Yangi rekord o‘rnatildi!";
 
-xabarEl.classList.add(
-  "success"
-);
+xabarEl.classList.add("success");
+```
 
 } else {
+newRecordEl.classList.remove("show");
 
-newRecordEl.classList.remove(
-  "show"
-);
-
+```
 xabarEl.textContent =
   "🎉 Ajoyib! Barcha juftliklar topildi.";
 
-xabarEl.classList.add(
-  "success"
-);
+xabarEl.classList.add("success");
+```
 
 }
 
@@ -423,74 +439,54 @@ ochModal();
 }
 
 /* =========================
-MODAL
-========================= */
-
-function ochModal() {
-
-winModal.classList.add("active");
-
-winModal.setAttribute(
-"aria-hidden",
-"false"
-);
-
-document.body.style.overflow =
-"hidden";
-}
-
-function yopModal() {
-
-winModal.classList.remove(
-"active"
-);
-
-winModal.setAttribute(
-"aria-hidden",
-"true"
-);
-
-document.body.style.overflow =
-"";
-}
-
-/* =========================
 EVENTS
 ========================= */
 
+if (qaytaBtn) {
 qaytaBtn.addEventListener(
 "click",
 yangiOyin
 );
+}
 
+if (modalRestart) {
 modalRestart.addEventListener(
 "click",
 yangiOyin
 );
+}
 
+if (rejimBtn) {
 rejimBtn.addEventListener(
 "click",
 rejimniAlmashtir
 );
+}
 
-winModal
-.querySelector(".modal-overlay")
-.addEventListener(
+if (winModal) {
+const overlay =
+winModal.querySelector(
+".modal-overlay"
+);
+
+if (overlay) {
+overlay.addEventListener(
 "click",
 yopModal
 );
+}
+}
 
 document.addEventListener(
 "keydown",
 (event) => {
-
 if (
-  event.key === "Escape" &&
-  winModal.classList.contains("active")
+event.key === "Escape" &&
+winModal &&
+winModal.classList.contains("active")
 ) {
-  yopModal();
+yopModal();
 }
-
 }
 );
 
