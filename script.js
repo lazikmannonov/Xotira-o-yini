@@ -1,12 +1,12 @@
 const RASMLAR = [
-"🍎",
-"🚀",
-"🐱",
-"⚽",
-"🎸",
-"🌵",
-"🍕",
-"🌙"
+  "🍎",
+  "🚀",
+  "🐱",
+  "⚽",
+  "🎸",
+  "🌵",
+  "🍕",
+  "🌙"
 ];
 
 const REKORD_KALIT = "xotira-rekord";
@@ -17,8 +17,13 @@ const yurishEl = document.getElementById("yurishlar");
 const vaqtEl = document.getElementById("vaqt");
 const rekordEl = document.getElementById("rekord");
 const xabarEl = document.getElementById("xabar");
+
 const qaytaBtn = document.getElementById("qayta");
 const rejimBtn = document.getElementById("rejim");
+
+const startScreen = document.getElementById("startScreen");
+const startBtn = document.getElementById("startBtn");
+const gameContent = document.getElementById("gameContent");
 
 const topilganEl = document.getElementById("topilgan");
 
@@ -26,474 +31,711 @@ const winModal = document.getElementById("winModal");
 const winText = document.getElementById("winText");
 const winMoves = document.getElementById("winMoves");
 const winTime = document.getElementById("winTime");
+
 const newRecordEl = document.getElementById("newRecord");
 const modalRestart = document.getElementById("modalRestart");
+
 
 let birinchi = null;
 let band = false;
 let topilgan = 0;
 let yurishlar = 0;
 let sekund = 0;
+
 let taymer = null;
+let oyunBoshlangan = false;
+
 
 /* =========================
-RANDOM
+   RANDOM
 ========================= */
 
 function aralashtir(royxat) {
-const nusxa = [...royxat];
 
-for (let i = nusxa.length - 1; i > 0; i--) {
-const j = Math.floor(Math.random() * (i + 1));
+  const nusxa = [...royxat];
 
-```
-[nusxa[i], nusxa[j]] = [nusxa[j], nusxa[i]];
-```
+  for (let i = nusxa.length - 1; i > 0; i--) {
 
+    const j = Math.floor(
+      Math.random() * (i + 1)
+    );
+
+    [nusxa[i], nusxa[j]] =
+      [nusxa[j], nusxa[i]];
+  }
+
+  return nusxa;
 }
 
-return nusxa;
-}
 
 /* =========================
-RECORD
+   RECORD
 ========================= */
 
 function rekordniOqi() {
-try {
-const v = Number(
-localStorage.getItem(REKORD_KALIT)
-);
 
-```
-return v > 0 ? v : null;
-```
+  try {
 
-} catch {
-return null;
+    const v = Number(
+      localStorage.getItem(
+        REKORD_KALIT
+      )
+    );
+
+    return v > 0 ? v : null;
+
+  } catch {
+
+    return null;
+  }
 }
-}
+
 
 function rekordniYoz(v) {
-try {
-localStorage.setItem(
-REKORD_KALIT,
-String(v)
-);
-} catch {
-// localStorage ishlamasa ham o'yin davom etadi
+
+  try {
+
+    localStorage.setItem(
+      REKORD_KALIT,
+      String(v)
+    );
+
+  } catch {
+    // localStorage ishlamasa ham o'yin davom etadi
+  }
 }
-}
+
 
 function rekordniKorsat() {
-const rekord = rekordniOqi();
 
-rekordEl.textContent = rekord
-? String(rekord)
-: "-";
+  const rekord = rekordniOqi();
+
+  rekordEl.textContent =
+    rekord
+      ? String(rekord)
+      : "-";
 }
 
+
 /* =========================
-TIMER
+   TIMER
 ========================= */
 
 function taymerniToxtat() {
-if (taymer) {
-clearInterval(taymer);
-taymer = null;
+
+  if (taymer) {
+
+    clearInterval(taymer);
+
+    taymer = null;
+  }
 }
-}
+
 
 function taymerniBoshla() {
-if (taymer) return;
 
-taymer = setInterval(() => {
-sekund++;
+  if (taymer || !oyunBoshlangan) {
+    return;
+  }
 
-```
-vaqtEl.textContent = String(sekund);
-```
+  taymer = setInterval(() => {
 
-}, 1000);
+    sekund++;
+
+    vaqtEl.textContent =
+      String(sekund);
+
+  }, 1000);
 }
 
+
 /* =========================
-THEME
+   THEME
 ========================= */
 
 function rejimniOqi() {
-try {
-return localStorage.getItem(REJIM_KALIT);
-} catch {
-return null;
+
+  try {
+
+    return localStorage.getItem(
+      REJIM_KALIT
+    );
+
+  } catch {
+
+    return null;
+  }
 }
-}
+
 
 function rejimniYoz(rejim) {
-try {
-localStorage.setItem(
-REJIM_KALIT,
-rejim
-);
-} catch {
-// Saqlash ishlamasa ham davom etadi
+
+  try {
+
+    localStorage.setItem(
+      REJIM_KALIT,
+      rejim
+    );
+
+  } catch {
+    // Saqlash ishlamasa ham davom etadi
+  }
 }
-}
+
 
 function rejimniOrnat(rejim) {
-document.documentElement.setAttribute(
-"data-theme",
-rejim
-);
 
-rejimBtn.textContent =
-rejim === "dark"
-? "☀️"
-: "🌙";
+  document.documentElement.setAttribute(
+    "data-theme",
+    rejim
+  );
+
+  if (rejimBtn) {
+
+    rejimBtn.textContent =
+      rejim === "dark"
+        ? "☀️"
+        : "🌙";
+  }
 }
+
 
 function rejimniAlmashtir() {
-const hozirgi =
-document.documentElement.getAttribute(
-"data-theme"
-) || "light";
 
-const yangi =
-hozirgi === "dark"
-? "light"
-: "dark";
+  const hozirgi =
+    document.documentElement.getAttribute(
+      "data-theme"
+    ) || "light";
 
-rejimniOrnat(yangi);
-rejimniYoz(yangi);
+  const yangi =
+    hozirgi === "dark"
+      ? "light"
+      : "dark";
+
+  rejimniOrnat(yangi);
+  rejimniYoz(yangi);
 }
+
 
 function boshlangichRejim() {
-const saqlangan = rejimniOqi();
 
-if (
-saqlangan === "dark" ||
-saqlangan === "light"
-) {
-rejimniOrnat(saqlangan);
-return;
+  const saqlangan =
+    rejimniOqi();
+
+  if (
+    saqlangan === "dark" ||
+    saqlangan === "light"
+  ) {
+
+    rejimniOrnat(saqlangan);
+
+    return;
+  }
+
+
+  let tizimDark = false;
+
+  if (window.matchMedia) {
+
+    tizimDark =
+      window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+  }
+
+
+  rejimniOrnat(
+    tizimDark
+      ? "dark"
+      : "light"
+  );
 }
 
-let tizimDark = false;
-
-if (window.matchMedia) {
-tizimDark = window.matchMedia(
-"(prefers-color-scheme: dark)"
-).matches;
-}
-
-rejimniOrnat(
-tizimDark
-? "dark"
-: "light"
-);
-}
 
 /* =========================
-MODAL
+   MODAL
 ========================= */
 
 function ochModal() {
-winModal.classList.add("active");
 
-winModal.setAttribute(
-"aria-hidden",
-"false"
-);
+  if (!winModal) {
+    return;
+  }
 
-document.body.style.overflow = "hidden";
+  winModal.classList.add(
+    "active"
+  );
+
+  winModal.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+  document.body.style.overflow =
+    "hidden";
 }
+
 
 function yopModal() {
-winModal.classList.remove("active");
 
-winModal.setAttribute(
-"aria-hidden",
-"true"
-);
+  if (!winModal) {
+    return;
+  }
 
-document.body.style.overflow = "";
+  winModal.classList.remove(
+    "active"
+  );
+
+  winModal.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+  document.body.style.overflow =
+    "";
 }
 
+
 /* =========================
-BOARD
+   START
+========================= */
+
+function oyinniBoshlash() {
+
+  if (startScreen) {
+    startScreen.classList.add(
+      "hidden"
+    );
+  }
+
+  if (gameContent) {
+    gameContent.classList.remove(
+      "hidden"
+    );
+  }
+
+  oyunBoshlangan = true;
+
+  yangiOyin();
+}
+
+
+/* =========================
+   NEW GAME
 ========================= */
 
 function yangiOyin() {
-taymerniToxtat();
 
-yopModal();
+  taymerniToxtat();
 
-birinchi = null;
-band = false;
-topilgan = 0;
-yurishlar = 0;
-sekund = 0;
+  yopModal();
 
-yurishEl.textContent = "0";
-vaqtEl.textContent = "0";
-topilganEl.textContent = "0";
+  birinchi = null;
+  band = false;
 
-xabarEl.textContent = "";
-xabarEl.className = "xabar";
+  topilgan = 0;
+  yurishlar = 0;
+  sekund = 0;
 
-rekordniKorsat();
+  oyunBoshlangan = true;
 
-taxta.innerHTML = "";
 
-const kartalar = aralashtir([
-...RASMLAR,
-...RASMLAR
-]);
+  yurishEl.textContent = "0";
 
-kartalar.forEach((rasm, index) => {
-const karta = document.createElement("button");
+  vaqtEl.textContent = "0";
 
-```
-karta.type = "button";
-karta.className = "karta";
+  topilganEl.textContent = "0";
 
-karta.dataset.rasm = rasm;
-karta.dataset.index = String(index);
 
-karta.setAttribute(
-  "aria-label",
-  "Yopiq karta"
-);
+  xabarEl.textContent = "";
 
-karta.innerHTML = `
-  <div class="ichki">
-    <div class="yuz orqa"></div>
-    <div class="yuz old"></div>
-  </div>
-`;
+  xabarEl.className =
+    "xabar";
 
-const old = karta.querySelector(".old");
 
-if (old) {
-  old.textContent = rasm;
+  rekordniKorsat();
+
+
+  taxta.innerHTML = "";
+
+
+  const kartalar =
+    aralashtir([
+      ...RASMLAR,
+      ...RASMLAR
+    ]);
+
+
+  kartalar.forEach(
+    (rasm, index) => {
+
+      const karta =
+        document.createElement(
+          "button"
+        );
+
+
+      karta.type = "button";
+
+      karta.className =
+        "karta";
+
+
+      karta.dataset.rasm =
+        rasm;
+
+      karta.dataset.index =
+        String(index);
+
+
+      karta.setAttribute(
+        "aria-label",
+        "Yopiq karta"
+      );
+
+
+      karta.innerHTML = `
+        <div class="ichki">
+
+          <div class="yuz orqa"></div>
+
+          <div class="yuz old"></div>
+
+        </div>
+      `;
+
+
+      const old =
+        karta.querySelector(
+          ".old"
+        );
+
+
+      if (old) {
+        old.textContent = rasm;
+      }
+
+
+      karta.addEventListener(
+        "click",
+        () => bos(karta)
+      );
+
+
+      taxta.appendChild(
+        karta
+      );
+
+    }
+  );
 }
 
-karta.addEventListener(
-  "click",
-  () => bos(karta)
-);
-
-taxta.appendChild(karta);
-```
-
-});
-}
 
 /* =========================
-CARD CLICK
+   CARD CLICK
 ========================= */
 
 function bos(karta) {
-if (band) return;
 
-if (
-karta.classList.contains("ochiq") ||
-karta.classList.contains("topilgan")
-) {
-return;
-}
+  if (!oyunBoshlangan) {
+    return;
+  }
 
-taymerniBoshla();
 
-karta.classList.add("ochiq");
+  if (band) {
+    return;
+  }
 
-karta.setAttribute(
-"aria-label",
-"Ochiq karta: " +
-karta.dataset.rasm
-);
 
-if (!birinchi) {
-birinchi = karta;
-return;
-}
+  if (
+    karta.classList.contains(
+      "ochiq"
+    ) ||
+    karta.classList.contains(
+      "topilgan"
+    )
+  ) {
 
-yurishlar++;
+    return;
+  }
 
-yurishEl.textContent =
-String(yurishlar);
 
-const ikkinchi = karta;
+  taymerniBoshla();
 
-if (
-birinchi.dataset.rasm ===
-ikkinchi.dataset.rasm
-) {
-[birinchi, ikkinchi].forEach((k) => {
-k.classList.remove("ochiq");
 
-```
-  k.classList.add("topilgan");
-
-  k.setAttribute(
-    "aria-label",
-    "Topilgan karta: " +
-    k.dataset.rasm
+  karta.classList.add(
+    "ochiq"
   );
-});
 
-birinchi = null;
 
-topilgan++;
-
-topilganEl.textContent =
-  String(topilgan);
-
-if (
-  topilgan === RASMLAR.length
-) {
-  yutdi();
-}
-
-return;
-```
-
-}
-
-band = true;
-
-const a = birinchi;
-
-birinchi = null;
-
-setTimeout(() => {
-[a, ikkinchi].forEach((k) => {
-k.classList.remove("ochiq");
-
-```
-  k.setAttribute(
+  karta.setAttribute(
     "aria-label",
-    "Yopiq karta"
+    "Ochiq karta: " +
+    karta.dataset.rasm
   );
-});
 
-band = false;
-```
 
-}, 800);
+  if (!birinchi) {
+
+    birinchi = karta;
+
+    return;
+  }
+
+
+  yurishlar++;
+
+
+  yurishEl.textContent =
+    String(yurishlar);
+
+
+  const ikkinchi = karta;
+
+
+  if (
+    birinchi.dataset.rasm ===
+    ikkinchi.dataset.rasm
+  ) {
+
+    [birinchi, ikkinchi]
+      .forEach((k) => {
+
+        k.classList.remove(
+          "ochiq"
+        );
+
+        k.classList.add(
+          "topilgan"
+        );
+
+        k.setAttribute(
+          "aria-label",
+          "Topilgan karta: " +
+          k.dataset.rasm
+        );
+
+      });
+
+
+    birinchi = null;
+
+
+    topilgan++;
+
+
+    topilganEl.textContent =
+      String(topilgan);
+
+
+    if (
+      topilgan ===
+      RASMLAR.length
+    ) {
+
+      yutdi();
+    }
+
+
+    return;
+  }
+
+
+  band = true;
+
+
+  const a = birinchi;
+
+  birinchi = null;
+
+
+  setTimeout(() => {
+
+    [a, ikkinchi]
+      .forEach((k) => {
+
+        k.classList.remove(
+          "ochiq"
+        );
+
+        k.setAttribute(
+          "aria-label",
+          "Yopiq karta"
+        );
+
+      });
+
+
+    band = false;
+
+  }, 800);
 }
+
 
 /* =========================
-WIN
+   WIN
 ========================= */
 
 function yutdi() {
-taymerniToxtat();
 
-const eski = rekordniOqi();
+  taymerniToxtat();
 
-const yangiRekord =
-!eski ||
-yurishlar < eski;
+  oyunBoshlangan = false;
 
-if (yangiRekord) {
-rekordniYoz(yurishlar);
+
+  const eski =
+    rekordniOqi();
+
+
+  const yangiRekord =
+    !eski ||
+    yurishlar < eski;
+
+
+  if (yangiRekord) {
+
+    rekordniYoz(
+      yurishlar
+    );
+  }
+
+
+  winMoves.textContent =
+    String(yurishlar);
+
+
+  winTime.textContent =
+    String(sekund);
+
+
+  winText.textContent =
+    `${yurishlar} yurish va ${sekund} soniyada barcha juftliklarni topdingiz.`;
+
+
+  if (yangiRekord) {
+
+    newRecordEl.classList.add(
+      "show"
+    );
+
+
+    xabarEl.textContent =
+      "🎉 Yangi rekord o‘rnatildi!";
+
+
+    xabarEl.classList.add(
+      "success"
+    );
+
+  } else {
+
+    newRecordEl.classList.remove(
+      "show"
+    );
+
+
+    xabarEl.textContent =
+      "🎉 Ajoyib! Barcha juftliklar topildi.";
+
+
+    xabarEl.classList.add(
+      "success"
+    );
+  }
+
+
+  rekordniKorsat();
+
+
+  setTimeout(() => {
+
+    ochModal();
+
+  }, 450);
 }
 
-winMoves.textContent =
-String(yurishlar);
-
-winTime.textContent =
-String(sekund);
-
-winText.textContent =
-`${yurishlar} yurish va ${sekund} soniyada barcha juftliklarni topdingiz.`;
-
-if (yangiRekord) {
-newRecordEl.classList.add("show");
-
-```
-xabarEl.textContent =
-  "🎉 Yangi rekord o‘rnatildi!";
-
-xabarEl.classList.add("success");
-```
-
-} else {
-newRecordEl.classList.remove("show");
-
-```
-xabarEl.textContent =
-  "🎉 Ajoyib! Barcha juftliklar topildi.";
-
-xabarEl.classList.add("success");
-```
-
-}
-
-rekordniKorsat();
-
-setTimeout(() => {
-ochModal();
-}, 450);
-}
 
 /* =========================
-EVENTS
+   EVENTS
 ========================= */
 
-if (qaytaBtn) {
-qaytaBtn.addEventListener(
-"click",
-yangiOyin
-);
+if (startBtn) {
+
+  startBtn.addEventListener(
+    "click",
+    oyinniBoshlash
+  );
 }
+
+
+if (qaytaBtn) {
+
+  qaytaBtn.addEventListener(
+    "click",
+    yangiOyin
+  );
+}
+
 
 if (modalRestart) {
-modalRestart.addEventListener(
-"click",
-yangiOyin
-);
+
+  modalRestart.addEventListener(
+    "click",
+    yangiOyin
+  );
 }
+
 
 if (rejimBtn) {
-rejimBtn.addEventListener(
-"click",
-rejimniAlmashtir
-);
+
+  rejimBtn.addEventListener(
+    "click",
+    rejimniAlmashtir
+  );
 }
+
 
 if (winModal) {
-const overlay =
-winModal.querySelector(
-".modal-overlay"
-);
 
-if (overlay) {
-overlay.addEventListener(
-"click",
-yopModal
-);
+  const overlay =
+    winModal.querySelector(
+      ".modal-overlay"
+    );
+
+
+  if (overlay) {
+
+    overlay.addEventListener(
+      "click",
+      yopModal
+    );
+  }
 }
-}
+
 
 document.addEventListener(
-"keydown",
-(event) => {
-if (
-event.key === "Escape" &&
-winModal &&
-winModal.classList.contains("active")
-) {
-yopModal();
-}
-}
+  "keydown",
+  (event) => {
+
+    if (
+      event.key === "Escape" &&
+      winModal &&
+      winModal.classList.contains(
+        "active"
+      )
+    ) {
+
+      yopModal();
+    }
+
+  }
 );
 
+
 /* =========================
-START
+   INITIALIZATION
 ========================= */
 
 boshlangichRejim();
 
-yangiOyin();
+rekordniKorsat();
