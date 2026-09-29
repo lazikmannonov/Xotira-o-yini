@@ -1,27 +1,147 @@
 <!DOCTYPE html>
+
 <html lang="uz">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Xotira o'yini</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111827">
+  <title>Xotira o‘yini</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <main class="oyin">
-    <h1>Xotira o'yini</h1>
-    <p class="izoh">Bir xil rasmli kartalarni juft-juft qilib toping.</p>
 
-    <div class="statistika">
-      <div>Yurishlar: <strong id="yurishlar">0</strong></div>
-      <div>Vaqt: <strong id="vaqt">0</strong> s</div>
-      <div>Rekord: <strong id="rekord">-</strong></div>
+<body>
+
+  <main class="oyin">
+
+```
+<header class="hero">
+  <div class="logo-icon">🧠</div>
+
+  <div>
+    <div class="eyebrow">MEMORY GAME</div>
+    <h1>Xotira o‘yini</h1>
+    <p class="izoh">
+      Bir xil kartalarni toping va xotirangizni sinab ko‘ring.
+    </p>
+  </div>
+
+  <button id="rejim" class="theme-btn" type="button" aria-label="Rejimni almashtirish">
+    🌙
+  </button>
+</header>
+
+<section class="statistika" aria-label="O‘yin statistikasi">
+
+  <div class="stat-card">
+    <div class="stat-icon">🎯</div>
+    <div class="stat-info">
+      <span>Yurishlar</span>
+      <strong id="yurishlar">0</strong>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon">⏱️</div>
+    <div class="stat-info">
+      <span>Vaqt</span>
+      <strong><span id="vaqt">0</span><small>s</small></strong>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon">🏆</div>
+    <div class="stat-info">
+      <span>Rekord</span>
+      <strong id="rekord">-</strong>
+    </div>
+  </div>
+
+</section>
+
+<section class="game-panel">
+
+  <div class="panel-top">
+    <div>
+      <span class="panel-label">XOTIRA MAYDONI</span>
+      <h2>Juftliklarni toping</h2>
     </div>
 
-    <div id="taxta" class="taxta" role="group" aria-label="O'yin taxtasi"></div>
+    <div class="progress-box">
+      <span id="topilgan">0</span>
+      <span>/ 8</span>
+    </div>
+  </div>
 
-    <p id="xabar" class="xabar" aria-live="polite"></p>
-    <button id="qayta" type="button">Qaytadan boshlash</button>
+  <div
+    id="taxta"
+    class="taxta"
+    role="group"
+    aria-label="O‘yin taxtasi">
+  </div>
+
+</section>
+
+<div class="message-wrap">
+  <div id="xabar" class="xabar" aria-live="polite"></div>
+</div>
+
+<button id="qayta" class="restart-btn" type="button">
+  <span class="restart-icon">↻</span>
+  Qaytadan boshlash
+</button>
+
+<p class="footer-text">
+  🧠 Diqqatni jamlang · Juftliklarni eslab qoling
+</p>
+```
+
   </main>
+
+  <div id="winModal" class="modal" aria-hidden="true">
+
+```
+<div class="modal-overlay"></div>
+
+<div class="modal-card">
+
+  <div class="win-icon">🏆</div>
+
+  <div class="modal-eyebrow">O‘YIN YAKUNLANDI</div>
+
+  <h2>Ajoyib! 🎉</h2>
+
+  <p id="winText">
+    Barcha juftliklarni topdingiz!
+  </p>
+
+  <div class="win-stats">
+
+    <div>
+      <span>Yurishlar</span>
+      <strong id="winMoves">0</strong>
+    </div>
+
+    <div>
+      <span>Vaqt</span>
+      <strong><span id="winTime">0</span>s</strong>
+    </div>
+
+  </div>
+
+  <div id="newRecord" class="new-record">
+    ✨ Yangi rekord!
+  </div>
+
+  <button id="modalRestart" class="modal-btn" type="button">
+    Yana o‘ynash
+  </button>
+
+</div>
+```
+
+  </div>
+
   <script src="script.js"></script>
+
 </body>
 </html>
