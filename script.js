@@ -51,7 +51,6 @@ const j = Math.floor(Math.random() * (i + 1));
   nusxa[j],
   nusxa[i]
 ];
-```
 
 }
 
@@ -68,9 +67,7 @@ const v = Number(
 localStorage.getItem(REKORD_KALIT)
 );
 
-```
 return v > 0 ? v : null;
-```
 
 } catch {
 return null;
@@ -111,9 +108,7 @@ if (taymer) return;
 taymer = setInterval(() => {
 sekund++;
 
-```
 vaqtEl.textContent = sekund;
-```
 
 }, 1000);
 }
@@ -225,7 +220,6 @@ const kartalar = aralashtir([
 
 kartalar.forEach((rasm, index) => {
 
-```
 const karta =
   document.createElement("button");
 
@@ -262,7 +256,6 @@ karta.addEventListener(
 );
 
 taxta.appendChild(karta);
-```
 
 });
 }
@@ -294,11 +287,9 @@ karta.dataset.rasm
 
 if (!birinchi) {
 
-```
 birinchi = karta;
 
 return;
-```
 
 }
 
@@ -313,7 +304,6 @@ birinchi.dataset.rasm ===
 ikkinchi.dataset.rasm
 ) {
 
-```
 [birinchi, ikkinchi].forEach(
   (k) => {
 
@@ -343,7 +333,6 @@ if (
 }
 
 return;
-```
 
 }
 
@@ -355,7 +344,6 @@ birinchi = null;
 
 setTimeout(() => {
 
-```
 [a, ikkinchi].forEach(
   (k) => {
 
@@ -369,7 +357,6 @@ setTimeout(() => {
 );
 
 band = false;
-```
 
 }, 800);
 }
@@ -402,7 +389,6 @@ winText.textContent =
 
 if (yangiRekord) {
 
-```
 newRecordEl.classList.add(
   "show"
 );
@@ -413,11 +399,9 @@ xabarEl.textContent =
 xabarEl.classList.add(
   "success"
 );
-```
 
 } else {
 
-```
 newRecordEl.classList.remove(
   "show"
 );
@@ -428,7 +412,6 @@ xabarEl.textContent =
 xabarEl.classList.add(
   "success"
 );
-```
 
 }
 
@@ -501,14 +484,12 @@ document.addEventListener(
 "keydown",
 (event) => {
 
-```
 if (
   event.key === "Escape" &&
   winModal.classList.contains("active")
 ) {
   yopModal();
 }
-```
 
 }
 );
