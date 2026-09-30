@@ -6,51 +6,11 @@ const RASMLAR = [
 ];
 
 const LEVELS = [
-    {
-        id: 1,
-        name: "Easy",
-        uz: "Oson",
-        icon: "🟢",
-        pairs: 4,
-        time: 120,
-        description: "4 juftlik • Boshlash uchun"
-    },
-    {
-        id: 2,
-        name: "Normal",
-        uz: "Oddiy",
-        icon: "🔵",
-        pairs: 8,
-        time: 120,
-        description: "8 juftlik • Klassik rejim"
-    },
-    {
-        id: 3,
-        name: "Hard",
-        uz: "Qiyin",
-        icon: "🟠",
-        pairs: 10,
-        time: 100,
-        description: "10 juftlik • Vaqt cheklangan"
-    },
-    {
-        id: 4,
-        name: "Expert",
-        uz: "Ekspert",
-        icon: "🔴",
-        pairs: 12,
-        time: 90,
-        description: "12 juftlik • Juda qiyin"
-    },
-    {
-        id: 5,
-        name: "Master",
-        uz: "Usta",
-        icon: "🟣",
-        pairs: 16,
-        time: 120,
-        description: "16 juftlik • Eng yuqori daraja"
-    }
+    { id: 1, name: "Easy", uz: "Oson", icon: "🟢", pairs: 4, time: 120, description: "4 juftlik • Boshlash uchun" },
+    { id: 2, name: "Normal", uz: "Oddiy", icon: "🔵", pairs: 8, time: 120, description: "8 juftlik • Klassik rejim" },
+    { id: 3, name: "Hard", uz: "Qiyin", icon: "🟠", pairs: 10, time: 100, description: "10 juftlik • Vaqt cheklangan" },
+    { id: 4, name: "Expert", uz: "Ekspert", icon: "🔴", pairs: 12, time: 90, description: "12 juftlik • Juda qiyin" },
+    { id: 5, name: "Master", uz: "Usta", icon: "🟣", pairs: 16, time: 120, description: "16 juftlik • Eng yuqori daraja" }
 ];
 
 const REKORD_KEY = "xotira-rekordlar";
@@ -104,7 +64,6 @@ const modalLevels = $("modalLevels");
 
 let tanlanganLevel = null;
 let kartalar = [];
-
 let birinchi = null;
 let ikkinchi = null;
 
@@ -122,6 +81,7 @@ let rekordlar = {};
 let ochilganLevel = 1;
 
 let audioCtx = null;
+let audioEnabled = true;
 
 
 /* =====================================================
@@ -134,117 +94,115 @@ function formatVaqt(seconds) {
     const minut = Math.floor(seconds / 60);
     const sekund = seconds % 60;
 
-    return (
-        String(minut).padStart(2, "0") +
-        ":" +
-        String(sekund).padStart(2, "0")
-    );
+    return String(minut).padStart(2, "0") + ":" +
+           String(sekund).padStart(2, "0");
 }
 
 
 /* =====================================================
-   AUDIO
+   XAVFSIZ AUDIO
 ===================================================== */
 
 function initAudio() {
+    if (!audioEnabled) return null;
+
     try {
         if (!audioCtx) {
-            audioCtx = new (
+            const AudioContextClass =
                 window.AudioContext ||
-                window.webkitAudioContext
-            )();
+                window.webkitAudioContext;
+
+            if (!AudioContextClass) {
+                audioEnabled = false;
+                return null;
+            }
+
+            audioCtx = new AudioContextClass();
         }
 
         if (audioCtx.state === "suspended") {
-            audioCtx.resume();
+            audioCtx.resume().catch(() => {});
         }
+
+        return audioCtx;
+
     } catch (error) {
-        console.log("Audio mavjud emas.");
+        audioEnabled = false;
+        return null;
     }
 }
 
 
 function sound(type) {
+    const ctx = initAudio();
 
-    initAudio();
-
-    if (!audioCtx) return;
+    if (!ctx) return;
 
     const patterns = {
+        click: [[520, 0.045, "sine", 0.035]],
 
-        click: [
-            [520, 0.045, "sine", 0.045]
-        ],
-
-        flip: [
-            [390, 0.055, "triangle", 0.035]
-        ],
+        flip: [[390, 0.055, "triangle", 0.025]],
 
         match: [
-            [520, 0.07, "sine", 0.055],
-            [660, 0.09, "sine", 0.06],
-            [820, 0.12, "sine", 0.065]
+            [520, 0.06, "sine", 0.035],
+            [660, 0.07, "sine", 0.04],
+            [820, 0.09, "sine", 0.045]
         ],
 
         wrong: [
-            [210, 0.10, "sawtooth", 0.025],
-            [150, 0.13, "sawtooth", 0.02]
+            [210, 0.08, "sawtooth", 0.018],
+            [150, 0.10, "sawtooth", 0.015]
         ],
 
         win: [
-            [523, 0.08, "sine", 0.055],
-            [659, 0.08, "sine", 0.06],
-            [784, 0.10, "sine", 0.065],
-            [1047, 0.18, "sine", 0.075]
+            [523, 0.07, "sine", 0.04],
+            [659, 0.07, "sine", 0.045],
+            [784, 0.08, "sine", 0.05],
+            [1047, 0.13, "sine", 0.055]
         ],
 
         time: [
-            [180, 0.15, "square", 0.025],
-            [130, 0.20, "square", 0.02]
+            [180, 0.12, "square", 0.018],
+            [130, 0.15, "square", 0.015]
         ],
 
         button: [
-            [330, 0.045, "sine", 0.035]
+            [330, 0.04, "sine", 0.025]
         ]
     };
 
     const pattern = patterns[type] || patterns.click;
+    const now = ctx.currentTime;
 
-    pattern.forEach(([freq, dur, wave, vol], i) => {
+    pattern.forEach(([freq, dur, wave, vol], index) => {
+        try {
+            const oscillator = ctx.createOscillator();
+            const gain = ctx.createGain();
 
-        const oscillator = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+            const start = now + index * 0.045;
 
-        const startTime =
-            audioCtx.currentTime + i * 0.045;
+            oscillator.type = wave;
+            oscillator.frequency.setValueAtTime(freq, start);
 
-        oscillator.type = wave;
-        oscillator.frequency.value = freq;
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.exponentialRampToValueAtTime(
+                vol,
+                start + 0.008
+            );
+            gain.gain.exponentialRampToValueAtTime(
+                0.0001,
+                start + dur
+            );
 
-        gain.gain.setValueAtTime(
-            0.0001,
-            startTime
-        );
+            oscillator.connect(gain);
+            gain.connect(ctx.destination);
 
-        gain.gain.exponentialRampToValueAtTime(
-            vol,
-            startTime + 0.008
-        );
+            oscillator.start(start);
+            oscillator.stop(start + dur + 0.02);
 
-        gain.gain.exponentialRampToValueAtTime(
-            0.0001,
-            startTime + dur
-        );
-
-        oscillator
-            .connect(gain)
-            .connect(audioCtx.destination);
-
-        oscillator.start(startTime);
-
-        oscillator.stop(
-            startTime + dur + 0.02
-        );
+        } catch (error) {
+            // Ovoz ishlamasa ham o‘yin davom etadi
+        }
     });
 }
 
@@ -254,15 +212,12 @@ function sound(type) {
 ===================================================== */
 
 function rekordlarniOqish() {
-
     try {
-
-        rekordlar =
-            JSON.parse(
-                localStorage.getItem(REKORD_KEY)
-            ) || {};
+        const data = localStorage.getItem(REKORD_KEY);
+        rekordlar = data ? JSON.parse(data) : {};
 
         if (
+            !rekordlar ||
             typeof rekordlar !== "object" ||
             Array.isArray(rekordlar)
         ) {
@@ -270,47 +225,52 @@ function rekordlarniOqish() {
         }
 
     } catch {
-
         rekordlar = {};
     }
 }
 
 
 function rekordniSaqlash() {
-
-    localStorage.setItem(
-        REKORD_KEY,
-        JSON.stringify(rekordlar)
-    );
+    try {
+        localStorage.setItem(
+            REKORD_KEY,
+            JSON.stringify(rekordlar)
+        );
+    } catch {}
 }
 
 
 function progressOqish() {
-
-    const qiymat = Number(
-        localStorage.getItem(PROGRESS_KEY)
-    );
-
-    if (
-        Number.isFinite(qiymat) &&
-        qiymat >= 1
-    ) {
-        ochilganLevel = Math.min(
-            Math.floor(qiymat),
-            LEVELS.length
+    try {
+        const qiymat = Number(
+            localStorage.getItem(PROGRESS_KEY)
         );
-    } else {
+
+        if (
+            Number.isFinite(qiymat) &&
+            qiymat >= 1
+        ) {
+            ochilganLevel = Math.min(
+                Math.floor(qiymat),
+                LEVELS.length
+            );
+        } else {
+            ochilganLevel = 1;
+        }
+
+    } catch {
         ochilganLevel = 1;
     }
 }
 
 
 function progressSaqlash() {
-
-    localStorage.setItem(
-        PROGRESS_KEY,
-        String(ochilganLevel)
-    );
+    try {
+        localStorage.setItem(
+            PROGRESS_KEY,
+            String(ochilganLevel)
+        );
+    } catch {}
 }
 
 
@@ -319,21 +279,21 @@ function progressSaqlash() {
 ===================================================== */
 
 function boshlangichRejim() {
-
     const dark =
         localStorage.getItem(THEME_KEY) === "dark";
 
     if (dark) {
-
-        document.documentElement
-            .setAttribute("data-theme", "dark");
+        document.documentElement.setAttribute(
+            "data-theme",
+            "dark"
+        );
 
         rejim.textContent = "☀️";
 
     } else {
-
-        document.documentElement
-            .removeAttribute("data-theme");
+        document.documentElement.removeAttribute(
+            "data-theme"
+        );
 
         rejim.textContent = "🌙";
     }
@@ -341,18 +301,17 @@ function boshlangichRejim() {
 
 
 function rejimniAlmashtir() {
-
-    initAudio();
     sound("button");
 
     const dark =
-        document.documentElement
-            .getAttribute("data-theme") === "dark";
+        document.documentElement.getAttribute(
+            "data-theme"
+        ) === "dark";
 
     if (dark) {
-
-        document.documentElement
-            .removeAttribute("data-theme");
+        document.documentElement.removeAttribute(
+            "data-theme"
+        );
 
         localStorage.setItem(
             THEME_KEY,
@@ -362,9 +321,10 @@ function rejimniAlmashtir() {
         rejim.textContent = "🌙";
 
     } else {
-
-        document.documentElement
-            .setAttribute("data-theme", "dark");
+        document.documentElement.setAttribute(
+            "data-theme",
+            "dark"
+        );
 
         localStorage.setItem(
             THEME_KEY,
@@ -375,9 +335,7 @@ function rejimniAlmashtir() {
     }
 
     rejim.classList.remove("theme-pop");
-
     void rejim.offsetWidth;
-
     rejim.classList.add("theme-pop");
 }
 
@@ -387,7 +345,6 @@ function rejimniAlmashtir() {
 ===================================================== */
 
 function levelYulduzlari(levelId) {
-
     const value = Number(
         rekordlar[levelId + "-stars"] || 0
     );
@@ -401,23 +358,17 @@ function levelYulduzlari(levelId) {
 
 
 /* =====================================================
-   BOSQICHLARNI CHIZISH
+   BOSQICHLAR
 ===================================================== */
 
 function levelsniChiz() {
-
     levelsBox.innerHTML = "";
 
     LEVELS.forEach(level => {
+        const ochiq = level.id <= ochilganLevel;
+        const best = rekordlar[level.id] || null;
 
-        const ochiq =
-            level.id <= ochilganLevel;
-
-        const best =
-            rekordlar[level.id] || null;
-
-        const card =
-            document.createElement("button");
+        const card = document.createElement("button");
 
         card.type = "button";
 
@@ -432,19 +383,11 @@ function levelsniChiz() {
             </div>
 
             <div class="level-info">
-
-                <strong>
-                    ${level.id}. ${level.name}
-                </strong>
-
-                <small>
-                    ${level.description}
-                </small>
-
+                <strong>${level.id}. ${level.name}</strong>
+                <small>${level.description}</small>
             </div>
 
             <div class="level-right">
-
                 <div class="stars">
                     ${levelYulduzlari(level.id)}
                 </div>
@@ -458,7 +401,6 @@ function levelsniChiz() {
                                 : "Qulflangan"
                     }
                 </small>
-
             </div>
 
             <div class="lock">
@@ -467,31 +409,20 @@ function levelsniChiz() {
         `;
 
         if (ochiq) {
-
-            card.addEventListener(
-                "click",
-                () => {
-
-                    sound("button");
-
-                    levelniBoshlash(
-                        level.id
-                    );
-                }
-            );
-
+            card.addEventListener("click", () => {
+                sound("button");
+                levelniBoshlash(level.id);
+            });
         } else {
-
             card.disabled = true;
         }
 
         levelsBox.appendChild(card);
     });
 
-    const tugagan =
-        LEVELS.filter(
-            level => rekordlar[level.id]
-        ).length;
+    const tugagan = LEVELS.filter(
+        level => rekordlar[level.id]
+    ).length;
 
     progressText.textContent =
         `${tugagan} / ${LEVELS.length}`;
@@ -509,16 +440,11 @@ function levelsniChiz() {
 ===================================================== */
 
 function levelniBoshlash(levelId) {
+    const level = LEVELS.find(
+        item => item.id === levelId
+    );
 
-    const level =
-        LEVELS.find(
-            item => item.id === levelId
-        );
-
-    if (
-        !level ||
-        levelId > ochilganLevel
-    ) {
+    if (!level || levelId > ochilganLevel) {
         return;
     }
 
@@ -527,15 +453,10 @@ function levelniBoshlash(levelId) {
     timerniToxtatish();
 
     levelScreen.classList.add("hidden");
-
     gameContent.classList.remove("hidden");
 
-    levelIcon.textContent =
-        level.icon;
-
-    levelName.textContent =
-        level.name;
-
+    levelIcon.textContent = level.icon;
+    levelName.textContent = level.name;
     levelNumber.textContent =
         `${level.id}-bosqich`;
 
@@ -548,17 +469,10 @@ function levelniBoshlash(levelId) {
 ===================================================== */
 
 function aralashtir(massiv) {
-
-    for (
-        let i = massiv.length - 1;
-        i > 0;
-        i--
-    ) {
-
-        const j =
-            Math.floor(
-                Math.random() * (i + 1)
-            );
+    for (let i = massiv.length - 1; i > 0; i--) {
+        const j = Math.floor(
+            Math.random() * (i + 1)
+        );
 
         [
             massiv[i],
@@ -576,13 +490,11 @@ function aralashtir(massiv) {
 ===================================================== */
 
 function boshlangichOyin() {
-
     if (!tanlanganLevel) return;
 
     timerniToxtatish();
 
     kartalar = [];
-
     birinchi = null;
     ikkinchi = null;
 
@@ -597,17 +509,11 @@ function boshlangichOyin() {
 
     yurishlar.textContent = "0";
     topilgan.textContent = "0";
-
-    jami.textContent =
-        tanlanganLevel.pairs;
-
+    jami.textContent = tanlanganLevel.pairs;
     vaqt.textContent = "00:00";
 
     comboElement.textContent = "0";
-
-    comboBox.classList.remove(
-        "active"
-    );
+    comboBox.classList.remove("active");
 
     xabar.textContent =
         "Bir xil kartalarni toping!";
@@ -615,15 +521,12 @@ function boshlangichOyin() {
     xabar.className = "xabar";
 
     rekord.textContent =
-        rekordlar[tanlanganLevel.id] ||
-        "—";
+        rekordlar[tanlanganLevel.id] || "—";
 
     yulduz.textContent = "0";
 
     timeLimit.textContent =
-        formatVaqt(
-            tanlanganLevel.time
-        );
+        formatVaqt(tanlanganLevel.time);
 
     timeLimitBox.classList.remove(
         "warning",
@@ -632,59 +535,39 @@ function boshlangichOyin() {
 
     taxta.innerHTML = "";
 
-    let nusxa =
-        RASMLAR.slice(
-            0,
-            tanlanganLevel.pairs
-        );
+    let nusxa = RASMLAR.slice(
+        0,
+        tanlanganLevel.pairs
+    );
 
-    nusxa = [
-        ...nusxa,
-        ...nusxa
-    ];
+    nusxa = [...nusxa, ...nusxa];
 
     aralashtir(nusxa);
 
-    nusxa.forEach(
-        (emoji, index) => {
+    nusxa.forEach((emoji, index) => {
+        const karta = document.createElement("button");
 
-            const karta =
-                document.createElement(
-                    "button"
-                );
+        karta.type = "button";
+        karta.className = "karta";
 
-            karta.type = "button";
+        karta.dataset.index = index;
+        karta.dataset.value = emoji;
 
-            karta.className = "karta";
+        karta.innerHTML = `
+            <div class="karta-inner">
+                <div class="karta-front"></div>
+                <div class="karta-back">${emoji}</div>
+            </div>
+        `;
 
-            karta.dataset.index =
-                index;
+        karta.addEventListener(
+            "click",
+            () => kartaBosildi(karta)
+        );
 
-            karta.dataset.value =
-                emoji;
-
-            karta.innerHTML = `
-                <div class="karta-inner">
-
-                    <div class="karta-front"></div>
-
-                    <div class="karta-back">
-                        ${emoji}
-                    </div>
-
-                </div>
-            `;
-
-            karta.addEventListener(
-                "click",
-                () => kartaBosildi(karta)
-            );
-
-            taxta.appendChild(karta);
-
-            kartalar.push(karta);
-        }
-    );
+        taxta.appendChild(karta);
+        kartalar.push(karta);
+    });
 
     taxta.style.gridTemplateColumns =
         "repeat(4, 1fr)";
@@ -696,41 +579,30 @@ function boshlangichOyin() {
 ===================================================== */
 
 function kartaBosildi(karta) {
+    if (!oyinBoshlangan) return;
+    if (qulflangan) return;
 
     if (
-        !oyinBoshlangan ||
-        qulflangan ||
         karta.classList.contains("ochiq") ||
         karta.classList.contains("topilgan")
     ) {
         return;
     }
 
-    initAudio();
+    /*
+       Birinchi bosishda ovoz va timer ishga tushadi.
+       Audio xato qilsa ham karta ishlashda davom etadi.
+    */
     sound("flip");
 
     if (!timer) {
         timerniBoshlash();
     }
 
-    karta.classList.add(
-        "ochiq",
-        "just-flipped"
-    );
-
-    setTimeout(
-        () => {
-            karta.classList.remove(
-                "just-flipped"
-            );
-        },
-        500
-    );
+    karta.classList.add("ochiq");
 
     if (!birinchi) {
-
         birinchi = karta;
-
         return;
     }
 
@@ -742,36 +614,27 @@ function kartaBosildi(karta) {
 
     yurish++;
 
-    yurishlar.textContent =
-        yurish;
+    yurishlar.textContent = yurish;
 
-    yurishlar.parentElement
-        .classList.remove(
-            "stat-pop"
-        );
+    const statBox =
+        yurishlar.parentElement;
 
-    void yurishlar.parentElement
-        .offsetWidth;
+    statBox.classList.remove("stat-pop");
 
-    yurishlar.parentElement
-        .classList.add(
-            "stat-pop"
-        );
+    void statBox.offsetWidth;
+
+    statBox.classList.add("stat-pop");
 
     tekshirish();
 }
 
 
 /* =====================================================
-   TEKSHIRISH
+   JUFTLIKNI TEKSHIRISH
 ===================================================== */
 
 function tekshirish() {
-
-    if (
-        !birinchi ||
-        !ikkinchi
-    ) {
+    if (!birinchi || !ikkinchi) {
         return;
     }
 
@@ -781,163 +644,119 @@ function tekshirish() {
     const b = ikkinchi;
 
     const mos =
-        a.dataset.value ===
-        b.dataset.value;
+        a.dataset.value === b.dataset.value;
 
     if (mos) {
+        setTimeout(() => {
+            sound("match");
 
-        setTimeout(
-            () => {
+            a.classList.add("topilgan");
+            b.classList.add("topilgan");
 
-                sound("match");
+            topilganSoni++;
 
-                a.classList.add(
-                    "topilgan"
+            topilgan.textContent =
+                topilganSoni;
+
+            combo++;
+
+            comboElement.textContent =
+                combo;
+
+            comboBox.classList.remove("active");
+
+            void comboBox.offsetWidth;
+
+            comboBox.classList.add("active");
+
+            a.classList.add("match-burst");
+            b.classList.add("match-burst");
+
+            setTimeout(() => {
+                a.classList.remove("match-burst");
+                b.classList.remove("match-burst");
+            }, 600);
+
+            if (combo >= 2) {
+                vaqtSon = Math.max(
+                    0,
+                    vaqtSon - 3
                 );
 
-                b.classList.add(
-                    "topilgan"
-                );
+                tempoYangilash();
 
-                topilganSoni++;
+                xabar.textContent =
+                    `🔥 ${combo} Combo! 3 soniya bonus!`;
 
-                topilgan.textContent =
-                    topilganSoni;
+                xabar.className =
+                    "xabar success";
 
-                combo++;
+            } else {
+                xabar.textContent =
+                    "✓ Juftlik topildi!";
 
-                comboElement.textContent =
-                    combo;
+                xabar.className =
+                    "xabar success";
+            }
 
-                comboBox.classList.remove(
-                    "active"
-                );
+            birinchi = null;
+            ikkinchi = null;
+            qulflangan = false;
 
-                void comboBox.offsetWidth;
+            if (
+                topilganSoni ===
+                tanlanganLevel.pairs
+            ) {
+                yutdi();
+            }
 
-                comboBox.classList.add(
-                    "active"
-                );
-
-                a.classList.add(
-                    "match-burst"
-                );
-
-                b.classList.add(
-                    "match-burst"
-                );
-
-                setTimeout(
-                    () => {
-
-                        a.classList.remove(
-                            "match-burst"
-                        );
-
-                        b.classList.remove(
-                            "match-burst"
-                        );
-
-                    },
-                    600
-                );
-
-                if (combo >= 2) {
-
-                    vaqtSon =
-                        Math.max(
-                            0,
-                            vaqtSon - 3
-                        );
-
-                    tempoYangilash();
-
-                    xabar.textContent =
-                        `🔥 ${combo} Combo! 3 soniya bonus!`;
-
-                    xabar.className =
-                        "xabar success";
-
-                } else {
-
-                    xabar.textContent =
-                        "✓ Juftlik topildi!";
-
-                    xabar.className =
-                        "xabar success";
-                }
-
-                birinchi = null;
-                ikkinchi = null;
-
-                qulflangan = false;
-
-                if (
-                    topilganSoni ===
-                    tanlanganLevel.pairs
-                ) {
-                    yutdi();
-                }
-
-            },
-            330
-        );
+        }, 350);
 
     } else {
-
         combo = 0;
-
-        comboElement.textContent =
-            "0";
+        comboElement.textContent = "0";
 
         a.classList.add("wrong");
         b.classList.add("wrong");
 
         sound("wrong");
 
-        setTimeout(
-            () => {
+        setTimeout(() => {
+            a.classList.remove(
+                "ochiq",
+                "wrong"
+            );
 
-                a.classList.remove(
-                    "ochiq",
-                    "wrong"
-                );
+            b.classList.remove(
+                "ochiq",
+                "wrong"
+            );
 
-                b.classList.remove(
-                    "ochiq",
-                    "wrong"
-                );
+            xabar.textContent =
+                "Bu kartalar bir xil emas.";
 
-                xabar.textContent =
-                    "Bu kartalar bir xil emas.";
+            xabar.className = "xabar";
 
-                xabar.className =
-                    "xabar";
+            birinchi = null;
+            ikkinchi = null;
 
-                birinchi = null;
-                ikkinchi = null;
+            qulflangan = false;
 
-                qulflangan = false;
-
-            },
-            780
-        );
+        }, 750);
     }
 }
 
 
 /* =====================================================
-   VAQTNI YANGILASH
+   VAQT
 ===================================================== */
 
 function tempoYangilash() {
-
     vaqt.textContent =
         formatVaqt(vaqtSon);
 
     const qolgan =
-        tanlanganLevel.time -
-        vaqtSon;
+        tanlanganLevel.time - vaqtSon;
 
     timeLimit.textContent =
         formatVaqt(
@@ -951,71 +770,47 @@ function tempoYangilash() {
 ===================================================== */
 
 function timerniBoshlash() {
-
     timerniToxtatish();
 
-    timer = setInterval(
-        () => {
+    timer = setInterval(() => {
+        if (!oyinBoshlangan) {
+            timerniToxtatish();
+            return;
+        }
 
-            if (!oyinBoshlangan) {
+        vaqtSon++;
 
-                timerniToxtatish();
+        tempoYangilash();
 
-                return;
-            }
+        const qolgan =
+            tanlanganLevel.time - vaqtSon;
 
-            vaqtSon++;
+        if (qolgan <= 15) {
+            timeLimitBox.classList.add("danger");
+            timeLimitBox.classList.remove("warning");
 
-            tempoYangilash();
+        } else if (qolgan <= 30) {
+            timeLimitBox.classList.add("warning");
+            timeLimitBox.classList.remove("danger");
 
-            const qolgan =
-                tanlanganLevel.time -
-                vaqtSon;
+        } else {
+            timeLimitBox.classList.remove(
+                "warning",
+                "danger"
+            );
+        }
 
-            if (qolgan <= 15) {
+        if (qolgan <= 0) {
+            vaqtTugadi();
+        }
 
-                timeLimitBox.classList.add(
-                    "danger"
-                );
-
-                timeLimitBox.classList.remove(
-                    "warning"
-                );
-
-            } else if (qolgan <= 30) {
-
-                timeLimitBox.classList.add(
-                    "warning"
-                );
-
-                timeLimitBox.classList.remove(
-                    "danger"
-                );
-
-            } else {
-
-                timeLimitBox.classList.remove(
-                    "warning",
-                    "danger"
-                );
-            }
-
-            if (qolgan <= 0) {
-                vaqtTugadi();
-            }
-
-        },
-        1000
-    );
+    }, 1000);
 }
 
 
 function timerniToxtatish() {
-
     if (timer !== null) {
-
         clearInterval(timer);
-
         timer = null;
     }
 }
@@ -1026,7 +821,6 @@ function timerniToxtatish() {
 ===================================================== */
 
 function vaqtTugadi() {
-
     if (!oyinBoshlangan) {
         return;
     }
@@ -1034,7 +828,6 @@ function vaqtTugadi() {
     timerniToxtatish();
 
     oyinBoshlangan = false;
-
     qulflangan = true;
 
     sound("time");
@@ -1045,28 +838,18 @@ function vaqtTugadi() {
     xabar.className =
         "xabar danger";
 
-    taxta.classList.add(
-        "board-shake"
-    );
+    taxta.classList.add("board-shake");
 
-    setTimeout(
-        () => {
+    setTimeout(() => {
+        taxta.classList.remove("board-shake");
 
-            taxta.classList.remove(
-                "board-shake"
-            );
+        if (
+            winModal.classList.contains("hidden")
+        ) {
+            boshlangichOyin();
+        }
 
-            if (
-                winModal.classList.contains(
-                    "hidden"
-                )
-            ) {
-                boshlangichOyin();
-            }
-
-        },
-        1000
-    );
+    }, 1000);
 }
 
 
@@ -1075,15 +858,11 @@ function vaqtTugadi() {
 ===================================================== */
 
 function yutdi() {
-
-    if (!tanlanganLevel) {
-        return;
-    }
+    if (!tanlanganLevel) return;
 
     timerniToxtatish();
 
     oyinBoshlangan = false;
-
     qulflangan = true;
 
     sound("win");
@@ -1092,20 +871,14 @@ function yutdi() {
         "victory-flash"
     );
 
-    setTimeout(
-        () => {
-            document.body.classList.remove(
-                "victory-flash"
-            );
-        },
-        800
-    );
+    setTimeout(() => {
+        document.body.classList.remove(
+            "victory-flash"
+        );
+    }, 800);
 
-    const vaqtNatija =
-        vaqtSon;
-
-    const limit =
-        tanlanganLevel.time;
+    const vaqtNatija = vaqtSon;
+    const limit = tanlanganLevel.time;
 
     let stars = 1;
 
@@ -1113,14 +886,12 @@ function yutdi() {
         yurish <=
         tanlanganLevel.pairs + 2
     ) {
-
         stars = 3;
 
     } else if (
         yurish <=
         tanlanganLevel.pairs + 6
     ) {
-
         stars = 2;
     }
 
@@ -1129,17 +900,14 @@ function yutdi() {
         vaqtNatija <=
         Math.floor(limit * 0.55)
     ) {
-
-        stars =
-            Math.min(
-                3,
-                stars + 1
-            );
+        stars = Math.min(
+            3,
+            stars + 1
+        );
     }
 
     const starsKey =
-        tanlanganLevel.id +
-        "-stars";
+        tanlanganLevel.id + "-stars";
 
     const oldStars =
         Number(
@@ -1151,9 +919,7 @@ function yutdi() {
     }
 
     const eskiRekord =
-        rekordlar[
-            tanlanganLevel.id
-        ];
+        rekordlar[tanlanganLevel.id];
 
     let yangiRekord = false;
 
@@ -1161,10 +927,8 @@ function yutdi() {
         !eskiRekord ||
         yurish < Number(eskiRekord)
     ) {
-
-        rekordlar[
-            tanlanganLevel.id
-        ] = yurish;
+        rekordlar[tanlanganLevel.id] =
+            yurish;
 
         yangiRekord = true;
     }
@@ -1172,12 +936,10 @@ function yutdi() {
     rekordniSaqlash();
 
     if (
-        tanlanganLevel.id <
-        LEVELS.length &&
+        tanlanganLevel.id < LEVELS.length &&
         ochilganLevel <
         tanlanganLevel.id + 1
     ) {
-
         ochilganLevel =
             tanlanganLevel.id + 1;
 
@@ -1195,8 +957,7 @@ function yutdi() {
             ? "Ajoyib natija! Siz juda yaxshi o‘ynadingiz."
             : "Bosqich muvaffaqiyatli bajarildi!";
 
-    winMoves.textContent =
-        yurish;
+    winMoves.textContent = yurish;
 
     winTime.textContent =
         formatVaqt(vaqtNatija);
@@ -1211,10 +972,8 @@ function yutdi() {
     );
 
     if (
-        tanlanganLevel.id <
-        LEVELS.length
+        tanlanganLevel.id < LEVELS.length
     ) {
-
         nextLevelBtn.classList.remove(
             "hidden"
         );
@@ -1223,7 +982,6 @@ function yutdi() {
             "Keyingi bosqich →";
 
     } else {
-
         nextLevelBtn.classList.add(
             "hidden"
         );
@@ -1232,9 +990,7 @@ function yutdi() {
             "🏆 Barcha bosqichlarni tugatdingiz!";
     }
 
-    winModal.classList.remove(
-        "hidden"
-    );
+    winModal.classList.remove("hidden");
 }
 
 
@@ -1243,10 +999,7 @@ function yutdi() {
 ===================================================== */
 
 function modalniYopish() {
-
-    winModal.classList.add(
-        "hidden"
-    );
+    winModal.classList.add("hidden");
 }
 
 
@@ -1263,13 +1016,8 @@ rejim.addEventListener(
 modalRestart.addEventListener(
     "click",
     () => {
-
-        initAudio();
-
         sound("button");
-
         modalniYopish();
-
         boshlangichOyin();
     }
 );
@@ -1278,27 +1026,15 @@ modalRestart.addEventListener(
 nextLevelBtn.addEventListener(
     "click",
     () => {
-
-        if (!tanlanganLevel) {
-            return;
-        }
+        if (!tanlanganLevel) return;
 
         const nextId =
             tanlanganLevel.id + 1;
 
-        if (
-            nextId <= LEVELS.length
-        ) {
-
-            initAudio();
-
+        if (nextId <= LEVELS.length) {
             sound("button");
-
             modalniYopish();
-
-            levelniBoshlash(
-                nextId
-            );
+            levelniBoshlash(nextId);
         }
     }
 );
@@ -1307,24 +1043,19 @@ nextLevelBtn.addEventListener(
 modalLevels.addEventListener(
     "click",
     () => {
-
-        initAudio();
-
         sound("button");
 
         modalniYopish();
-
         timerniToxtatish();
 
         oyinBoshlangan = false;
+        qulflangan = false;
 
-        gameContent.classList.add(
-            "hidden"
-        );
+        birinchi = null;
+        ikkinchi = null;
 
-        levelScreen.classList.remove(
-            "hidden"
-        );
+        gameContent.classList.add("hidden");
+        levelScreen.classList.remove("hidden");
 
         levelsniChiz();
     }
@@ -1334,10 +1065,7 @@ modalLevels.addEventListener(
 winModal.addEventListener(
     "click",
     event => {
-
-        if (
-            event.target === winModal
-        ) {
+        if (event.target === winModal) {
             modalniYopish();
         }
     }
@@ -1347,12 +1075,9 @@ winModal.addEventListener(
 document.addEventListener(
     "keydown",
     event => {
-
         if (
             event.key === "Escape" &&
-            !winModal.classList.contains(
-                "hidden"
-            )
+            !winModal.classList.contains("hidden")
         ) {
             modalniYopish();
         }
@@ -1363,11 +1088,7 @@ document.addEventListener(
 qayta.addEventListener(
     "click",
     () => {
-
-        initAudio();
-
         sound("button");
-
         boshlangichOyin();
     }
 );
@@ -1376,22 +1097,18 @@ qayta.addEventListener(
 backLevels.addEventListener(
     "click",
     () => {
-
-        initAudio();
-
         sound("button");
 
         timerniToxtatish();
 
         oyinBoshlangan = false;
+        qulflangan = false;
 
-        gameContent.classList.add(
-            "hidden"
-        );
+        birinchi = null;
+        ikkinchi = null;
 
-        levelScreen.classList.remove(
-            "hidden"
-        );
+        gameContent.classList.add("hidden");
+        levelScreen.classList.remove("hidden");
 
         levelsniChiz();
     }
@@ -1403,9 +1120,6 @@ backLevels.addEventListener(
 ===================================================== */
 
 rekordlarniOqish();
-
 progressOqish();
-
 boshlangichRejim();
-
 levelsniChiz();
