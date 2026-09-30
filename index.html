@@ -13,20 +13,23 @@
     <header class="header">
         <div class="logo-box">
             <div class="logo-icon">🧠</div>
+
             <div>
                 <div class="eyebrow">MEMORY GAME</div>
                 <h1>Xotira o‘yini</h1>
             </div>
         </div>
 
-        <button id="rejim" class="theme-btn" aria-label="Rejimni almashtirish">🌙</button>
+        <button id="rejim" class="theme-btn" aria-label="Rejimni almashtirish">
+            🌙
+        </button>
     </header>
 
-    <!-- LEVEL TANLASH -->
     <section id="levelScreen" class="level-screen">
 
         <div class="level-title">
             <span>🎯</span>
+
             <div>
                 <p class="eyebrow">BOSQICHNI TANLANG</p>
                 <h2>Xotirangizni sinang</h2>
@@ -34,20 +37,22 @@
         </div>
 
         <div class="overall-progress">
+
             <div class="progress-top">
                 <span>Umumiy progress</span>
-                <strong id="progressText">1 / 5</strong>
+                <strong id="progressText">0 / 5</strong>
             </div>
+
             <div class="progress-bar">
                 <div id="progressFill"></div>
             </div>
+
         </div>
 
         <div id="levels" class="levels"></div>
 
     </section>
 
-    <!-- O‘YIN -->
     <main id="gameContent" class="game-content hidden">
 
         <div class="game-top">
@@ -57,11 +62,14 @@
             </button>
 
             <div class="current-level">
+
                 <span id="levelIcon">🟢</span>
+
                 <div>
                     <small id="levelName">Easy</small>
                     <strong id="levelNumber">1-bosqich</strong>
                 </div>
+
             </div>
 
             <div id="comboBox" class="combo-box">
@@ -74,6 +82,7 @@
 
             <div class="stat">
                 <span>🎯</span>
+
                 <div>
                     <small>Yurishlar</small>
                     <strong id="yurishlar">0</strong>
@@ -82,6 +91,7 @@
 
             <div class="stat">
                 <span>⏱️</span>
+
                 <div>
                     <small>Vaqt</small>
                     <strong id="vaqt">00:00</strong>
@@ -90,6 +100,7 @@
 
             <div class="stat">
                 <span>🏆</span>
+
                 <div>
                     <small>Rekord</small>
                     <strong id="rekord">—</strong>
@@ -98,6 +109,7 @@
 
             <div class="stat">
                 <span>⭐</span>
+
                 <div>
                     <small>Yulduz</small>
                     <strong id="yulduz">0</strong>
@@ -109,14 +121,21 @@
         <div class="game-panel">
 
             <div class="game-info">
+
                 <div>
                     <span>Topilgan</span>
-                    <strong><span id="topilgan">0</span> / <span id="jami">8</span></strong>
+
+                    <strong>
+                        <span id="topilgan">0</span>
+                        /
+                        <span id="jami">8</span>
+                    </strong>
                 </div>
 
                 <div id="timeLimitBox" class="time-limit">
                     ⏳ <span id="timeLimit">—</span>
                 </div>
+
             </div>
 
             <div id="taxta" class="taxta"></div>
@@ -139,18 +158,23 @@
 
 </div>
 
-<!-- YUTISH MODALI -->
-
 <div id="winModal" class="modal hidden">
+
     <div class="modal-card">
 
         <div class="win-icon">🏆</div>
 
-        <div class="eyebrow">BOSQICH BAJARILDI</div>
+        <div class="eyebrow">
+            BOSQICH BAJARILDI
+        </div>
 
-        <h2 id="winTitle">Ajoyib!</h2>
+        <h2 id="winTitle">
+            Ajoyib!
+        </h2>
 
-        <p id="winText">Siz barcha juftliklarni topdingiz.</p>
+        <p id="winText">
+            Siz barcha juftliklarni topdingiz.
+        </p>
 
         <div id="newRecord" class="new-record hidden">
             🏆 Yangi rekord!
@@ -175,6 +199,7 @@
         </div>
 
         <div class="modal-buttons">
+
             <button id="modalRestart" class="secondary-btn">
                 ↻ Qayta o‘ynash
             </button>
@@ -182,6 +207,7 @@
             <button id="nextLevelBtn" class="primary-btn">
                 Keyingi bosqich →
             </button>
+
         </div>
 
         <button id="modalLevels" class="levels-btn">
@@ -189,6 +215,7 @@
         </button>
 
     </div>
+
 </div>
 
 <script src="script.js"></script>
