@@ -6,11 +6,51 @@ const RASMLAR = [
 ];
 
 const LEVELS = [
-    { id: 1, name: "Easy", uz: "Oson", icon: "🟢", pairs: 4, time: 120, description: "4 juftlik • Boshlash uchun" },
-    { id: 2, name: "Normal", uz: "Oddiy", icon: "🔵", pairs: 8, time: 120, description: "8 juftlik • Klassik rejim" },
-    { id: 3, name: "Hard", uz: "Qiyin", icon: "🟠", pairs: 10, time: 100, description: "10 juftlik • Vaqt cheklangan" },
-    { id: 4, name: "Expert", uz: "Ekspert", icon: "🔴", pairs: 12, time: 90, description: "12 juftlik • Juda qiyin" },
-    { id: 5, name: "Master", uz: "Usta", icon: "🟣", pairs: 16, time: 120, description: "16 juftlik • Eng yuqori daraja" }
+    {
+        id: 1,
+        name: "Easy",
+        uz: "Oson",
+        icon: "🟢",
+        pairs: 4,
+        time: 120,
+        description: "4 juftlik • Boshlash uchun"
+    },
+    {
+        id: 2,
+        name: "Normal",
+        uz: "Oddiy",
+        icon: "🔵",
+        pairs: 8,
+        time: 120,
+        description: "8 juftlik • Klassik rejim"
+    },
+    {
+        id: 3,
+        name: "Hard",
+        uz: "Qiyin",
+        icon: "🟠",
+        pairs: 10,
+        time: 100,
+        description: "10 juftlik • Vaqt cheklangan"
+    },
+    {
+        id: 4,
+        name: "Expert",
+        uz: "Ekspert",
+        icon: "🔴",
+        pairs: 12,
+        time: 90,
+        description: "12 juftlik • Juda qiyin"
+    },
+    {
+        id: 5,
+        name: "Master",
+        uz: "Usta",
+        icon: "🟣",
+        pairs: 16,
+        time: 120,
+        description: "16 juftlik • Eng yuqori daraja"
+    }
 ];
 
 const REKORD_KEY = "xotira-rekordlar";
@@ -31,12 +71,11 @@ const levelNumber = $("levelNumber");
 const yurishlar = $("yurishlar");
 const vaqt = $("vaqt");
 const rekord = $("rekord");
-
 const yulduz = $("yulduz");
+
 const topilgan = $("topilgan");
 const jami = $("jami");
 const taxta = $("taxta");
-
 const xabar = $("xabar");
 const qayta = $("qayta");
 const rejim = $("rejim");
@@ -55,6 +94,7 @@ const winTitle = $("winTitle");
 const winText = $("winText");
 const winMoves = $("winMoves");
 const winTime = $("winTime");
+
 const newRecord = $("newRecord");
 const starsResult = $("starsResult");
 
@@ -63,61 +103,181 @@ const nextLevelBtn = $("nextLevelBtn");
 const modalLevels = $("modalLevels");
 
 let tanlanganLevel = null;
-
 let kartalar = [];
+
 let birinchi = null;
 let ikkinchi = null;
 
 let qulflangan = false;
+
 let yurish = 0;
 let topilganSoni = 0;
-
 let vaqtSon = 0;
-let timer = null;
 
+let timer = null;
 let oyinBoshlangan = false;
 let combo = 0;
 
 let rekordlar = {};
 let ochilganLevel = 1;
 
+let audioCtx = null;
 
-// =====================================================
-// VAQT FORMAT
-// =====================================================
+
+/* =====================================================
+   VAQT
+===================================================== */
 
 function formatVaqt(seconds) {
     seconds = Math.max(0, Number(seconds) || 0);
 
-    const daqiqa = Math.floor(seconds / 60);
-    const soniya = seconds % 60;
+    const minut = Math.floor(seconds / 60);
+    const sekund = seconds % 60;
 
     return (
-        String(daqiqa).padStart(2, "0") +
+        String(minut).padStart(2, "0") +
         ":" +
-        String(soniya).padStart(2, "0")
+        String(sekund).padStart(2, "0")
     );
 }
 
 
-// =====================================================
-// REKORDLAR
-// =====================================================
+/* =====================================================
+   AUDIO
+===================================================== */
+
+function initAudio() {
+    try {
+        if (!audioCtx) {
+            audioCtx = new (
+                window.AudioContext ||
+                window.webkitAudioContext
+            )();
+        }
+
+        if (audioCtx.state === "suspended") {
+            audioCtx.resume();
+        }
+    } catch (error) {
+        console.log("Audio mavjud emas.");
+    }
+}
+
+
+function sound(type) {
+
+    initAudio();
+
+    if (!audioCtx) return;
+
+    const patterns = {
+
+        click: [
+            [520, 0.045, "sine", 0.045]
+        ],
+
+        flip: [
+            [390, 0.055, "triangle", 0.035]
+        ],
+
+        match: [
+            [520, 0.07, "sine", 0.055],
+            [660, 0.09, "sine", 0.06],
+            [820, 0.12, "sine", 0.065]
+        ],
+
+        wrong: [
+            [210, 0.10, "sawtooth", 0.025],
+            [150, 0.13, "sawtooth", 0.02]
+        ],
+
+        win: [
+            [523, 0.08, "sine", 0.055],
+            [659, 0.08, "sine", 0.06],
+            [784, 0.10, "sine", 0.065],
+            [1047, 0.18, "sine", 0.075]
+        ],
+
+        time: [
+            [180, 0.15, "square", 0.025],
+            [130, 0.20, "square", 0.02]
+        ],
+
+        button: [
+            [330, 0.045, "sine", 0.035]
+        ]
+    };
+
+    const pattern = patterns[type] || patterns.click;
+
+    pattern.forEach(([freq, dur, wave, vol], i) => {
+
+        const oscillator = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        const startTime =
+            audioCtx.currentTime + i * 0.045;
+
+        oscillator.type = wave;
+        oscillator.frequency.value = freq;
+
+        gain.gain.setValueAtTime(
+            0.0001,
+            startTime
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+            vol,
+            startTime + 0.008
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.0001,
+            startTime + dur
+        );
+
+        oscillator
+            .connect(gain)
+            .connect(audioCtx.destination);
+
+        oscillator.start(startTime);
+
+        oscillator.stop(
+            startTime + dur + 0.02
+        );
+    });
+}
+
+
+/* =====================================================
+   LOCAL STORAGE
+===================================================== */
 
 function rekordlarniOqish() {
-    try {
-        rekordlar =
-            JSON.parse(localStorage.getItem(REKORD_KEY)) || {};
 
-        if (typeof rekordlar !== "object") {
+    try {
+
+        rekordlar =
+            JSON.parse(
+                localStorage.getItem(REKORD_KEY)
+            ) || {};
+
+        if (
+            typeof rekordlar !== "object" ||
+            Array.isArray(rekordlar)
+        ) {
             rekordlar = {};
         }
+
     } catch {
+
         rekordlar = {};
     }
 }
 
+
 function rekordniSaqlash() {
+
     localStorage.setItem(
         REKORD_KEY,
         JSON.stringify(rekordlar)
@@ -125,11 +285,8 @@ function rekordniSaqlash() {
 }
 
 
-// =====================================================
-// LEVEL PROGRESS
-// =====================================================
-
 function progressOqish() {
+
     const qiymat = Number(
         localStorage.getItem(PROGRESS_KEY)
     );
@@ -147,7 +304,9 @@ function progressOqish() {
     }
 }
 
+
 function progressSaqlash() {
+
     localStorage.setItem(
         PROGRESS_KEY,
         String(ochilganLevel)
@@ -155,40 +314,45 @@ function progressSaqlash() {
 }
 
 
-// =====================================================
-// DARK MODE
-// =====================================================
+/* =====================================================
+   DARK MODE
+===================================================== */
 
 function boshlangichRejim() {
+
     const dark =
         localStorage.getItem(THEME_KEY) === "dark";
 
     if (dark) {
-        document.documentElement.setAttribute(
-            "data-theme",
-            "dark"
-        );
+
+        document.documentElement
+            .setAttribute("data-theme", "dark");
 
         rejim.textContent = "☀️";
+
     } else {
-        document.documentElement.removeAttribute(
-            "data-theme"
-        );
+
+        document.documentElement
+            .removeAttribute("data-theme");
 
         rejim.textContent = "🌙";
     }
 }
 
+
 function rejimniAlmashtir() {
+
+    initAudio();
+    sound("button");
+
     const dark =
-        document.documentElement.getAttribute(
-            "data-theme"
-        ) === "dark";
+        document.documentElement
+            .getAttribute("data-theme") === "dark";
 
     if (dark) {
-        document.documentElement.removeAttribute(
-            "data-theme"
-        );
+
+        document.documentElement
+            .removeAttribute("data-theme");
 
         localStorage.setItem(
             THEME_KEY,
@@ -196,11 +360,11 @@ function rejimniAlmashtir() {
         );
 
         rejim.textContent = "🌙";
+
     } else {
-        document.documentElement.setAttribute(
-            "data-theme",
-            "dark"
-        );
+
+        document.documentElement
+            .setAttribute("data-theme", "dark");
 
         localStorage.setItem(
             THEME_KEY,
@@ -209,34 +373,43 @@ function rejimniAlmashtir() {
 
         rejim.textContent = "☀️";
     }
+
+    rejim.classList.remove("theme-pop");
+
+    void rejim.offsetWidth;
+
+    rejim.classList.add("theme-pop");
 }
 
 
-// =====================================================
-// YULDUZLAR
-// =====================================================
+/* =====================================================
+   YULDUZLAR
+===================================================== */
 
 function levelYulduzlari(levelId) {
-    const qiymat = Number(
+
+    const value = Number(
         rekordlar[levelId + "-stars"] || 0
     );
 
-    if (qiymat >= 3) return "⭐⭐⭐";
-    if (qiymat === 2) return "⭐⭐☆";
-    if (qiymat === 1) return "⭐☆☆";
+    if (value >= 3) return "⭐⭐⭐";
+    if (value === 2) return "⭐⭐☆";
+    if (value === 1) return "⭐☆☆";
 
     return "☆☆☆";
 }
 
 
-// =====================================================
-// LEVEL LARNI CHIZISH
-// =====================================================
+/* =====================================================
+   BOSQICHLARNI CHIZISH
+===================================================== */
 
 function levelsniChiz() {
+
     levelsBox.innerHTML = "";
 
     LEVELS.forEach(level => {
+
         const ochiq =
             level.id <= ochilganLevel;
 
@@ -259,6 +432,7 @@ function levelsniChiz() {
             </div>
 
             <div class="level-info">
+
                 <strong>
                     ${level.id}. ${level.name}
                 </strong>
@@ -266,9 +440,11 @@ function levelsniChiz() {
                 <small>
                     ${level.description}
                 </small>
+
             </div>
 
             <div class="level-right">
+
                 <div class="stars">
                     ${levelYulduzlari(level.id)}
                 </div>
@@ -282,6 +458,7 @@ function levelsniChiz() {
                                 : "Qulflangan"
                     }
                 </small>
+
             </div>
 
             <div class="lock">
@@ -290,11 +467,21 @@ function levelsniChiz() {
         `;
 
         if (ochiq) {
+
             card.addEventListener(
                 "click",
-                () => levelniBoshlash(level.id)
+                () => {
+
+                    sound("button");
+
+                    levelniBoshlash(
+                        level.id
+                    );
+                }
             );
+
         } else {
+
             card.disabled = true;
         }
 
@@ -317,25 +504,30 @@ function levelsniChiz() {
 }
 
 
-// =====================================================
-// LEVELNI BOSHLASH
-// =====================================================
+/* =====================================================
+   LEVELNI BOSHLASH
+===================================================== */
 
 function levelniBoshlash(levelId) {
+
     const level =
         LEVELS.find(
             item => item.id === levelId
         );
 
-    if (!level) return;
-
-    if (levelId > ochilganLevel) return;
+    if (
+        !level ||
+        levelId > ochilganLevel
+    ) {
+        return;
+    }
 
     tanlanganLevel = level;
 
     timerniToxtatish();
 
     levelScreen.classList.add("hidden");
+
     gameContent.classList.remove("hidden");
 
     levelIcon.textContent =
@@ -351,16 +543,18 @@ function levelniBoshlash(levelId) {
 }
 
 
-// =====================================================
-// ARALASHTIRISH
-// =====================================================
+/* =====================================================
+   ARALASHTIRISH
+===================================================== */
 
 function aralashtir(massiv) {
+
     for (
         let i = massiv.length - 1;
         i > 0;
         i--
     ) {
+
         const j =
             Math.floor(
                 Math.random() * (i + 1)
@@ -377,11 +571,12 @@ function aralashtir(massiv) {
 }
 
 
-// =====================================================
-// YANGI O'YIN
-// =====================================================
+/* =====================================================
+   YANGI O‘YIN
+===================================================== */
 
 function boshlangichOyin() {
+
     if (!tanlanganLevel) return;
 
     timerniToxtatish();
@@ -395,9 +590,7 @@ function boshlangichOyin() {
 
     yurish = 0;
     topilganSoni = 0;
-
     combo = 0;
-
     vaqtSon = 0;
 
     oyinBoshlangan = true;
@@ -422,9 +615,8 @@ function boshlangichOyin() {
     xabar.className = "xabar";
 
     rekord.textContent =
-        rekordlar[
-            tanlanganLevel.id
-        ] || "—";
+        rekordlar[tanlanganLevel.id] ||
+        "—";
 
     yulduz.textContent = "0";
 
@@ -455,6 +647,7 @@ function boshlangichOyin() {
 
     nusxa.forEach(
         (emoji, index) => {
+
             const karta =
                 document.createElement(
                     "button"
@@ -462,8 +655,7 @@ function boshlangichOyin() {
 
             karta.type = "button";
 
-            karta.className =
-                "karta";
+            karta.className = "karta";
 
             karta.dataset.index =
                 index;
@@ -474,8 +666,7 @@ function boshlangichOyin() {
             karta.innerHTML = `
                 <div class="karta-inner">
 
-                    <div class="karta-front">
-                    </div>
+                    <div class="karta-front"></div>
 
                     <div class="karta-back">
                         ${emoji}
@@ -500,41 +691,52 @@ function boshlangichOyin() {
 }
 
 
-// =====================================================
-// KARTA BOSILISHI
-// =====================================================
+/* =====================================================
+   KARTA BOSILDI
+===================================================== */
 
 function kartaBosildi(karta) {
-    if (!oyinBoshlangan) return;
-
-    if (qulflangan) return;
 
     if (
-        karta.classList.contains(
-            "ochiq"
-        )
-    ) return;
+        !oyinBoshlangan ||
+        qulflangan ||
+        karta.classList.contains("ochiq") ||
+        karta.classList.contains("topilgan")
+    ) {
+        return;
+    }
 
-    if (
-        karta.classList.contains(
-            "topilgan"
-        )
-    ) return;
+    initAudio();
+    sound("flip");
 
     if (!timer) {
         timerniBoshlash();
     }
 
     karta.classList.add(
-        "ochiq"
+        "ochiq",
+        "just-flipped"
+    );
+
+    setTimeout(
+        () => {
+            karta.classList.remove(
+                "just-flipped"
+            );
+        },
+        500
     );
 
     if (!birinchi) {
+
         birinchi = karta;
+
         return;
     }
 
-    if (karta === birinchi) return;
+    if (karta === birinchi) {
+        return;
+    }
 
     ikkinchi = karta;
 
@@ -543,115 +745,143 @@ function kartaBosildi(karta) {
     yurishlar.textContent =
         yurish;
 
+    yurishlar.parentElement
+        .classList.remove(
+            "stat-pop"
+        );
+
+    void yurishlar.parentElement
+        .offsetWidth;
+
+    yurishlar.parentElement
+        .classList.add(
+            "stat-pop"
+        );
+
     tekshirish();
 }
 
 
-// =====================================================
-// JUFTLIKNI TEKSHIRISH
-// =====================================================
+/* =====================================================
+   TEKSHIRISH
+===================================================== */
 
 function tekshirish() {
-    if (!birinchi || !ikkinchi) {
+
+    if (
+        !birinchi ||
+        !ikkinchi
+    ) {
         return;
     }
 
     qulflangan = true;
 
-    const birinchiKarta =
-        birinchi;
-
-    const ikkinchiKarta =
-        ikkinchi;
+    const a = birinchi;
+    const b = ikkinchi;
 
     const mos =
-        birinchiKarta.dataset.value ===
-        ikkinchiKarta.dataset.value;
+        a.dataset.value ===
+        b.dataset.value;
 
     if (mos) {
-        setTimeout(() => {
 
-            birinchiKarta.classList.add(
-                "topilgan"
-            );
+        setTimeout(
+            () => {
 
-            ikkinchiKarta.classList.add(
-                "topilgan"
-            );
+                sound("match");
 
-            topilganSoni++;
+                a.classList.add(
+                    "topilgan"
+                );
 
-            topilgan.textContent =
-                topilganSoni;
+                b.classList.add(
+                    "topilgan"
+                );
 
-            combo++;
+                topilganSoni++;
 
-            comboElement.textContent =
-                combo;
+                topilgan.textContent =
+                    topilganSoni;
 
-            comboBox.classList.remove(
-                "active"
-            );
+                combo++;
 
-            void comboBox.offsetWidth;
+                comboElement.textContent =
+                    combo;
 
-            comboBox.classList.add(
-                "active"
-            );
+                comboBox.classList.remove(
+                    "active"
+                );
 
-            if (combo >= 2) {
+                void comboBox.offsetWidth;
 
-                vaqtSon =
-                    Math.max(
-                        0,
-                        vaqtSon - 3
-                    );
+                comboBox.classList.add(
+                    "active"
+                );
 
-                vaqt.textContent =
-                    formatVaqt(
-                        vaqtSon
-                    );
+                a.classList.add(
+                    "match-burst"
+                );
 
-                const qolgan =
-                    tanlanganLevel.time -
-                    vaqtSon;
+                b.classList.add(
+                    "match-burst"
+                );
 
-                timeLimit.textContent =
-                    formatVaqt(
+                setTimeout(
+                    () => {
+
+                        a.classList.remove(
+                            "match-burst"
+                        );
+
+                        b.classList.remove(
+                            "match-burst"
+                        );
+
+                    },
+                    600
+                );
+
+                if (combo >= 2) {
+
+                    vaqtSon =
                         Math.max(
                             0,
-                            qolgan
-                        )
-                    );
+                            vaqtSon - 3
+                        );
 
-                xabar.textContent =
-                    `🔥 ${combo} Combo! 3 soniya bonus!`;
+                    tempoYangilash();
 
-                xabar.className =
-                    "xabar success";
+                    xabar.textContent =
+                        `🔥 ${combo} Combo! 3 soniya bonus!`;
 
-            } else {
+                    xabar.className =
+                        "xabar success";
 
-                xabar.textContent =
-                    "✓ Juftlik topildi!";
+                } else {
 
-                xabar.className =
-                    "xabar success";
-            }
+                    xabar.textContent =
+                        "✓ Juftlik topildi!";
 
-            birinchi = null;
-            ikkinchi = null;
+                    xabar.className =
+                        "xabar success";
+                }
 
-            qulflangan = false;
+                birinchi = null;
+                ikkinchi = null;
 
-            if (
-                topilganSoni ===
-                tanlanganLevel.pairs
-            ) {
-                yutdi();
-            }
+                qulflangan = false;
 
-        }, 350);
+                if (
+                    topilganSoni ===
+                    tanlanganLevel.pairs
+                ) {
+                    yutdi();
+                }
+
+            },
+            330
+        );
 
     } else {
 
@@ -660,99 +890,125 @@ function tekshirish() {
         comboElement.textContent =
             "0";
 
-        setTimeout(() => {
+        a.classList.add("wrong");
+        b.classList.add("wrong");
 
-            birinchiKarta.classList.remove(
-                "ochiq"
-            );
+        sound("wrong");
 
-            ikkinchiKarta.classList.remove(
-                "ochiq"
-            );
+        setTimeout(
+            () => {
 
-            xabar.textContent =
-                "Bu kartalar bir xil emas.";
+                a.classList.remove(
+                    "ochiq",
+                    "wrong"
+                );
 
-            xabar.className =
-                "xabar";
+                b.classList.remove(
+                    "ochiq",
+                    "wrong"
+                );
 
-            birinchi = null;
-            ikkinchi = null;
+                xabar.textContent =
+                    "Bu kartalar bir xil emas.";
 
-            qulflangan = false;
+                xabar.className =
+                    "xabar";
 
-        }, 800);
+                birinchi = null;
+                ikkinchi = null;
+
+                qulflangan = false;
+
+            },
+            780
+        );
     }
 }
 
 
-// =====================================================
-// TIMER
-// =====================================================
+/* =====================================================
+   VAQTNI YANGILASH
+===================================================== */
+
+function tempoYangilash() {
+
+    vaqt.textContent =
+        formatVaqt(vaqtSon);
+
+    const qolgan =
+        tanlanganLevel.time -
+        vaqtSon;
+
+    timeLimit.textContent =
+        formatVaqt(
+            Math.max(0, qolgan)
+        );
+}
+
+
+/* =====================================================
+   TIMER
+===================================================== */
 
 function timerniBoshlash() {
+
     timerniToxtatish();
 
-    timer = setInterval(() => {
+    timer = setInterval(
+        () => {
 
-        if (!oyinBoshlangan) {
-            timerniToxtatish();
-            return;
-        }
+            if (!oyinBoshlangan) {
 
-        vaqtSon++;
+                timerniToxtatish();
 
-        vaqt.textContent =
-            formatVaqt(
-                vaqtSon
-            );
+                return;
+            }
 
-        const qolgan =
-            tanlanganLevel.time -
-            vaqtSon;
+            vaqtSon++;
 
-        timeLimit.textContent =
-            formatVaqt(
-                Math.max(
-                    0,
-                    qolgan
-                )
-            );
+            tempoYangilash();
 
-        if (qolgan <= 15) {
+            const qolgan =
+                tanlanganLevel.time -
+                vaqtSon;
 
-            timeLimitBox.classList.add(
-                "danger"
-            );
+            if (qolgan <= 15) {
 
-            timeLimitBox.classList.remove(
-                "warning"
-            );
+                timeLimitBox.classList.add(
+                    "danger"
+                );
 
-        } else if (qolgan <= 30) {
+                timeLimitBox.classList.remove(
+                    "warning"
+                );
 
-            timeLimitBox.classList.add(
-                "warning"
-            );
+            } else if (qolgan <= 30) {
 
-            timeLimitBox.classList.remove(
-                "danger"
-            );
+                timeLimitBox.classList.add(
+                    "warning"
+                );
 
-        } else {
+                timeLimitBox.classList.remove(
+                    "danger"
+                );
 
-            timeLimitBox.classList.remove(
-                "warning",
-                "danger"
-            );
-        }
+            } else {
 
-        if (qolgan <= 0) {
-            vaqtTugadi();
-        }
+                timeLimitBox.classList.remove(
+                    "warning",
+                    "danger"
+                );
+            }
 
-    }, 1000);
+            if (qolgan <= 0) {
+                vaqtTugadi();
+            }
+
+        },
+        1000
+    );
 }
+
 
 function timerniToxtatish() {
 
@@ -765,19 +1021,23 @@ function timerniToxtatish() {
 }
 
 
-// =====================================================
-// VAQT TUGASHI
-// =====================================================
+/* =====================================================
+   VAQT TUGADI
+===================================================== */
 
 function vaqtTugadi() {
 
-    if (!oyinBoshlangan) return;
+    if (!oyinBoshlangan) {
+        return;
+    }
 
     timerniToxtatish();
 
     oyinBoshlangan = false;
 
     qulflangan = true;
+
+    sound("time");
 
     xabar.textContent =
         "⏰ Vaqt tugadi! Qayta urinib ko‘ring.";
@@ -785,33 +1045,61 @@ function vaqtTugadi() {
     xabar.className =
         "xabar danger";
 
-    setTimeout(() => {
+    taxta.classList.add(
+        "board-shake"
+    );
 
-        if (
-            winModal.classList.contains(
-                "hidden"
-            )
-        ) {
-            boshlangichOyin();
-        }
+    setTimeout(
+        () => {
 
-    }, 1000);
+            taxta.classList.remove(
+                "board-shake"
+            );
+
+            if (
+                winModal.classList.contains(
+                    "hidden"
+                )
+            ) {
+                boshlangichOyin();
+            }
+
+        },
+        1000
+    );
 }
 
 
-// =====================================================
-// YUTISH
-// =====================================================
+/* =====================================================
+   YUTISH
+===================================================== */
 
 function yutdi() {
 
-    if (!tanlanganLevel) return;
+    if (!tanlanganLevel) {
+        return;
+    }
 
     timerniToxtatish();
 
     oyinBoshlangan = false;
 
     qulflangan = true;
+
+    sound("win");
+
+    document.body.classList.add(
+        "victory-flash"
+    );
+
+    setTimeout(
+        () => {
+            document.body.classList.remove(
+                "victory-flash"
+            );
+        },
+        800
+    );
 
     const vaqtNatija =
         vaqtSon;
@@ -839,9 +1127,7 @@ function yutdi() {
     if (
         tanlanganLevel.id >= 3 &&
         vaqtNatija <=
-            Math.floor(
-                limit * 0.55
-            )
+        Math.floor(limit * 0.55)
     ) {
 
         stars =
@@ -861,8 +1147,7 @@ function yutdi() {
         );
 
     if (stars > oldStars) {
-        rekordlar[starsKey] =
-            stars;
+        rekordlar[starsKey] = stars;
     }
 
     const eskiRekord =
@@ -874,8 +1159,7 @@ function yutdi() {
 
     if (
         !eskiRekord ||
-        yurish <
-            Number(eskiRekord)
+        yurish < Number(eskiRekord)
     ) {
 
         rekordlar[
@@ -889,9 +1173,9 @@ function yutdi() {
 
     if (
         tanlanganLevel.id <
-            LEVELS.length &&
+        LEVELS.length &&
         ochilganLevel <
-            tanlanganLevel.id + 1
+        tanlanganLevel.id + 1
     ) {
 
         ochilganLevel =
@@ -915,28 +1199,16 @@ function yutdi() {
         yurish;
 
     winTime.textContent =
-        formatVaqt(
-            vaqtNatija
-        );
+        formatVaqt(vaqtNatija);
 
     starsResult.textContent =
         "⭐".repeat(stars) +
-        "☆".repeat(
-            3 - stars
-        );
+        "☆".repeat(3 - stars);
 
-    if (yangiRekord) {
-
-        newRecord.classList.remove(
-            "hidden"
-        );
-
-    } else {
-
-        newRecord.classList.add(
-            "hidden"
-        );
-    }
+    newRecord.classList.toggle(
+        "hidden",
+        !yangiRekord
+    );
 
     if (
         tanlanganLevel.id <
@@ -966,9 +1238,9 @@ function yutdi() {
 }
 
 
-// =====================================================
-// MODAL
-// =====================================================
+/* =====================================================
+   MODAL
+===================================================== */
 
 function modalniYopish() {
 
@@ -978,18 +1250,23 @@ function modalniYopish() {
 }
 
 
-// =====================================================
-// EVENTLAR
-// =====================================================
+/* =====================================================
+   EVENTLAR
+===================================================== */
 
 rejim.addEventListener(
     "click",
     rejimniAlmashtir
 );
 
+
 modalRestart.addEventListener(
     "click",
     () => {
+
+        initAudio();
+
+        sound("button");
 
         modalniYopish();
 
@@ -997,19 +1274,25 @@ modalRestart.addEventListener(
     }
 );
 
+
 nextLevelBtn.addEventListener(
     "click",
     () => {
 
-        if (!tanlanganLevel) return;
+        if (!tanlanganLevel) {
+            return;
+        }
 
         const nextId =
             tanlanganLevel.id + 1;
 
         if (
-            nextId <=
-            LEVELS.length
+            nextId <= LEVELS.length
         ) {
+
+            initAudio();
+
+            sound("button");
 
             modalniYopish();
 
@@ -1020,9 +1303,14 @@ nextLevelBtn.addEventListener(
     }
 );
 
+
 modalLevels.addEventListener(
     "click",
     () => {
+
+        initAudio();
+
+        sound("button");
 
         modalniYopish();
 
@@ -1042,19 +1330,19 @@ modalLevels.addEventListener(
     }
 );
 
+
 winModal.addEventListener(
     "click",
     event => {
 
         if (
-            event.target ===
-            winModal
+            event.target === winModal
         ) {
-
             modalniYopish();
         }
     }
 );
+
 
 document.addEventListener(
     "keydown",
@@ -1066,23 +1354,32 @@ document.addEventListener(
                 "hidden"
             )
         ) {
-
             modalniYopish();
         }
     }
 );
 
+
 qayta.addEventListener(
     "click",
     () => {
+
+        initAudio();
+
+        sound("button");
 
         boshlangichOyin();
     }
 );
 
+
 backLevels.addEventListener(
     "click",
     () => {
+
+        initAudio();
+
+        sound("button");
 
         timerniToxtatish();
 
@@ -1101,9 +1398,9 @@ backLevels.addEventListener(
 );
 
 
-// =====================================================
-// ISHGA TUSHIRISH
-// =====================================================
+/* =====================================================
+   ISHGA TUSHIRISH
+===================================================== */
 
 rekordlarniOqish();
 
